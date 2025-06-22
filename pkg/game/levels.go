@@ -1,5 +1,7 @@
 package game
 
+import "math"
+
 type WorkerRow struct {
 	// Placement of workers and platforms
 	// All in tile units 0-21
@@ -18,17 +20,23 @@ const (
 	ObstacleNil uint8 = iota
 	ObstacleBucket
 	ObstacleBeam
+	ObstacleSandwich
+	ObstacleCash
 )
 
 type ObsRow struct {
 	Obs   []uint8 // iotas above
-	Delay uint8   // (4.25s max)
+	Delay int16   // (4.25s max)
 }
 
 type GameLevel struct {
 	WRows []WorkerRow
 	WPos  []WorkerPos
 	Obs   []ObsRow
+}
+
+func DelSec(sec float64) int16 {
+	return int16(math.Floor(sec * TPS))
 }
 
 func MakeLevels() *[]GameLevel {
@@ -46,7 +54,12 @@ func MakeLevels() *[]GameLevel {
 				{WID: 2, RowInd: 0, RowPos: 12},
 			},
 			Obs: []ObsRow{
-				{Obs: []uint8{0, 1, 2, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: 255},
+				{Obs: []uint8{0, 1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0}, Delay: DelSec(4)},
+				{Obs: []uint8{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, Delay: DelSec(4)},
+				{Obs: []uint8{0, 1, 2, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0}, Delay: DelSec(4)},
+				{Obs: []uint8{0, 1, 2, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0}, Delay: DelSec(4)},
+				{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(99)},
+				{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: 0},
 			},
 		},
 	}

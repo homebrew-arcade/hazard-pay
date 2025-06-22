@@ -7,18 +7,23 @@ import (
 )
 
 type SceneGame struct {
-	gr         GameRoot
-	lvl        GameLevel
-	gs         *GameState
-	obsRow     uint
-	wA         *Movable
-	wB         *Movable
-	wC         *Movable
-	mRows      [][]*Movable
-	pltSprs    []Sprite
+	gr      GameRoot
+	lvl     GameLevel
+	gs      *GameState
+	wA      *Movable     // Player A
+	wB      *Movable     // Worker B
+	wC      *Movable     // Worker C
+	mRows   [][]*Movable // Platform/worker resolvers
+	pltSprs []Sprite
+
 	wSprs      []Sprite
 	leftKeyDb  uint8 // debounce counter
 	rightKeyDb uint8 // debounce counter
+	obsRowInd  uint8
+	delayRmnd  int16
+	obsPreview ObsRow            // Preview obstacles
+	obsFalling []FallingObstacle // Falling obstacles May have many
+	obsDequeue []uint16          // falling indicies to remove before next loop
 }
 
 type Movable struct {
@@ -28,20 +33,87 @@ type Movable struct {
 	IsWorker bool
 }
 
-const WHitPad = 5 // 10px of 16
+type FallingObstacle struct {
+	Type uint8
+	X    int16
+	Y    int16
+}
+
+const ObsHitPad = 3 // 10px of 16
 const XVel = 1
+const FallVel = 1
 const KeyDBLimit = 4
 
 func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
 	s.gr = gr
 	s.gs = gs
 	s.lvl = (*gs.Lvls)[gs.LvlInd]
-	s.obsRow = 0
 	s.wSprs = make([]Sprite, 3)
+	s.obsPreview = s.lvl.Obs[s.obsRowInd]
+	s.delayRmnd = s.obsPreview.Delay
 }
 
 func (s *SceneGame) Enter() {
 	// Set up level
+	s.makeWorkerPlatforms()
+
+}
+
+func (s *SceneGame) Update() error {
+	s.updateWorkerMovement()
+	s.updateObstacles()
+	s.updateCollisions()
+
+	return nil
+}
+
+func (s *SceneGame) Draw(screen *ebiten.Image) {
+	screen.DrawImage(ImgGameBg, ImgGameBgDrawOp)
+	screen.DrawImage(ImgForeman, ImgFormanDrawOp)
+
+	for _, sp := range s.pltSprs {
+		if sp.Img == nil {
+			continue
+		}
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(sp.X), float64(sp.Y))
+		screen.DrawImage(sp.Img, op)
+	}
+	for _, sp := range s.wSprs {
+		if sp.Img == nil {
+			continue
+		}
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(sp.X), float64(sp.Y))
+		screen.DrawImage(sp.Img, op)
+	}
+	for tx, obsType := range s.obsPreview.Obs {
+		if obsType == 0 {
+			continue
+		}
+		if int(obsType) >= len(ImgsObstacles) {
+			log.Fatal("Obstacle Preview type not mappable to sprite sheet")
+		}
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(tx*TileSize+TileSize), 0)
+		screen.DrawImage(ImgsObstacles[obsType], op)
+	}
+
+	for _, obs := range s.obsFalling {
+		if int(obs.Type) >= len(ImgsObstacles) {
+			log.Fatal("Falling Obstacle type not mappable to sprite sheet")
+		}
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(obs.X), float64(obs.Y))
+		screen.DrawImage(ImgsObstacles[obs.Type], op)
+	}
+}
+
+func (s *SceneGame) Exit() {
+	// nil out pointers and empty slices
+}
+
+func (s *SceneGame) makeWorkerPlatforms() {
 	s.mRows = make([][]*Movable, len(s.lvl.WRows))
 	for i, wRow := range s.lvl.WRows {
 		// Allocate empty bumper
@@ -62,7 +134,6 @@ func (s *SceneGame) Enter() {
 				Y:   ScreenHeight - TileSize - (int16(wRow.ZPos) * TileSize),
 				Img: ImgPlatform,
 			})
-			//fmt.Printf("%+v, %v \n", s.pltSprs[len(s.pltSprs)-1], i)
 		}
 	}
 	for _, wPos := range s.lvl.WPos {
@@ -104,7 +175,7 @@ func (s *SceneGame) Enter() {
 	}
 }
 
-func (s *SceneGame) Update() error {
+func (s *SceneGame) updateWorkerMovement() {
 	s.wA.Hold = false
 	s.wB.Hold = false
 	s.wC.Hold = false
@@ -168,30 +239,66 @@ func (s *SceneGame) Update() error {
 	s.wSprs[0].X = s.wA.X
 	s.wSprs[1].X = s.wB.X
 	s.wSprs[2].X = s.wC.X
-
-	return nil
 }
 
-func (s *SceneGame) Draw(screen *ebiten.Image) {
-	screen.DrawImage(ImgGameBg, ImgGameBgDrawOp)
-	screen.DrawImage(ImgForeman, ImgFormanDrawOp)
+func (s *SceneGame) updateObstacles() {
+	s.delayRmnd--
+	if s.delayRmnd <= 0 {
+		// copy into falling and swap
+		for tx, obsType := range s.obsPreview.Obs {
+			if obsType == 0 {
+				continue
+			}
+			obs := FallingObstacle{
+				X:    int16(tx*TileSize + TileSize),
+				Y:    0,
+				Type: obsType,
+			}
+			s.obsFalling = append(s.obsFalling, obs)
+		}
+		s.obsRowInd++
+		if int(s.obsRowInd) >= len(s.lvl.Obs) {
+			log.Fatal("end of level rows")
+		}
+		s.obsPreview = s.lvl.Obs[s.obsRowInd]
+		s.delayRmnd = s.obsPreview.Delay
+	}
 
-	for _, sp := range s.pltSprs {
-		if sp.Img == nil {
+	for i, obs := range s.obsFalling {
+		if obs.Type == ObstacleNil || obs.Y > ScreenHeight {
+			s.obsDequeue = append(s.obsDequeue, uint16(i))
 			continue
 		}
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(float64(sp.X), float64(sp.Y))
-		screen.DrawImage(sp.Img, op)
+		s.obsFalling[i].Y += FallVel
 	}
-	for _, sp := range s.wSprs {
-		if sp.Img == nil {
-			continue
-		}
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(float64(sp.X), float64(sp.Y))
-		screen.DrawImage(sp.Img, op)
-	}
+	s.dequeueObstacles()
 }
 
-func (s *SceneGame) Exit() {}
+func (s *SceneGame) dequeueObstacles() {
+	if len(s.obsDequeue) == 0 {
+		return
+	}
+	// dequeue from falling
+	// must iterate in reverse
+	for i := len(s.obsDequeue) - 1; i >= 0; i-- {
+		di := int(s.obsDequeue[i])
+		obsFLen := len(s.obsFalling)
+		if di >= obsFLen {
+			log.Fatal("Obstable Dequeue index out of range ", di, obsFLen)
+		}
+		if obsFLen == 1 {
+			// straight trim, no swap
+			s.obsFalling = s.obsFalling[:0]
+			break
+		}
+		// Swapback routine, copy from end and reslice
+		s.obsFalling[di] = s.obsFalling[obsFLen-1]
+		s.obsFalling = s.obsFalling[:obsFLen-1]
+	}
+	// reset dequeue slice without backing mutation
+	s.obsDequeue = s.obsDequeue[:0]
+}
+
+func (s *SceneGame) updateCollisions() {
+
+}
