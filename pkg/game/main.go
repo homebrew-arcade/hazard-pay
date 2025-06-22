@@ -11,15 +11,20 @@ import (
 type Game struct {
 	s       Scene
 	queuedS Scene
+	gs      *GameState
 }
 
 func (g *Game) Init() {
+	g.s = &SceneGame{}
+	g.queuedS = nil
+	g.gs = MakeGameState()
 }
 
 func (g *Game) Update() error {
 	if g.queuedS != nil {
 		g.s = g.queuedS
 		g.queuedS = nil
+		g.s.Init(g, g.gs)
 		g.s.Enter()
 	}
 	err := g.s.Update()
@@ -48,15 +53,15 @@ func (g *Game) Enter() {
 	if g.s == nil {
 		log.Fatal("no scene provided to gameroot")
 	}
-	g.s.Init(g)
+	g.s.Init(g, g.gs)
 	g.s.Enter()
 }
 
-func (g *Game) SetScene(t SceneToken) {
+func (g *Game) SetScene(ns Scene) {
 	if g.s != nil {
 		g.s.Exit()
 	}
-	g.queuedS = SceneProvider(t)
+	g.queuedS = ns
 }
 
 func (g *Game) Exit() {
@@ -66,9 +71,9 @@ func (g *Game) Exit() {
 func Main() {
 	ebiten.SetWindowSize(WindowWidth, WindowHeight)
 	ebiten.SetWindowTitle("Hazard Pay")
-	g := Game{
-		s: nil,
-	}
+	ebiten.SetTPS(TPS)
+	ebiten.SetVsyncEnabled(VSyncEnabled)
+	g := Game{}
 	g.Init()
 	g.Enter()
 	if err := ebiten.RunGame(&g); err != nil {

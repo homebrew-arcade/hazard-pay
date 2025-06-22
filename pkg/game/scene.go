@@ -4,17 +4,10 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-type SceneToken int
-
 type Scene interface {
-	Init(GameRoot)
+	Init(GameRoot, *GameState)
 	Enter()
 	Update() error
-	Draw(screen *ebiten.Image)
+	Draw(*ebiten.Image)
 	Exit()
-	Root() GameRoot
-}
-
-func SceneProvider(token SceneToken) Scene {
-	return nil
 }

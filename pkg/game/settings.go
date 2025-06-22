@@ -12,10 +12,11 @@ const (
 	WindowWidth  = 1920
 	WindowHeight = 1080
 
-	TPS          = 60
+	TPS          = 100
 	VSyncEnabled = true
 
-	TileSize = 16
+	TileSize     = 16
+	HalfTileSize = 8
 
 	Esc     = ebiten.KeyEscape
 	P1Coin  = ebiten.Key5
