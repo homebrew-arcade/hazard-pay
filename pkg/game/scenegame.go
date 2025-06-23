@@ -27,6 +27,8 @@ type SceneGame struct {
 	obsPreview ObsRow            // Preview obstacles
 	obsFalling []FallingObstacle // Falling obstacles May have many
 	obsDequeue []uint16          // falling indicies to remove before next loop
+	cm         *CharacterMap
+	textTest   *FontText
 }
 
 type Movable struct {
@@ -59,7 +61,14 @@ func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
 func (s *SceneGame) Enter() {
 	// Set up level
 	s.makeWorkerPlatforms()
-
+	s.cm = MakeCharacterMap(ImgFont)
+	s.textTest = MakeFontText(s.cm, []string{
+		"Hello World",
+		"This is Sample Text",
+	})
+	s.textTest.X = 8
+	s.textTest.Y = 8
+	s.textTest.LineSpace = 4
 }
 
 func (s *SceneGame) Update() error {
@@ -122,6 +131,9 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 			fmt.Sprintf("Lives: %v, Score: %v", s.gs.P1Lives, s.gs.P1Score),
 		)
 	}
+
+	//screen.DrawImage(ImgFont, &ebiten.DrawImageOptions{})
+	s.textTest.Draw(screen)
 }
 
 func (s *SceneGame) Exit() {

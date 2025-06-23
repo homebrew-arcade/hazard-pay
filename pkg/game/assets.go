@@ -67,3 +67,12 @@ var ImgsObstacles = func() []*ebiten.Image {
 	}
 	return imgs
 }()
+
+// Font in pixelfont
+var ImgFont = func() *ebiten.Image {
+	img, err := LoadPFImage(embedFS, "assets/Arcade_The_Simpsons_(Konami).pf", nil, nil)
+	if err != nil {
+		log.Fatal("error loading font")
+	}
+	return ebiten.NewImageFromImage(img)
+}()
