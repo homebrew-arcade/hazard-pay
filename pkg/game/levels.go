@@ -18,8 +18,8 @@ type WorkerPos struct {
 
 const (
 	ObstacleNil uint8 = iota
-	ObstacleBucket
 	ObstacleBeam
+	ObstacleBucket
 	ObstacleSandwich
 	ObstacleCash
 )
@@ -55,7 +55,6 @@ func MakeLevels() *[]GameLevel {
 			},
 			Obs: []ObsRow{
 				{Obs: []uint8{0, 1, 2, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0}, Delay: DelSec(4)},
-				{Obs: []uint8{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, Delay: DelSec(4)},
 				{Obs: []uint8{0, 1, 2, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0}, Delay: DelSec(4)},
 				{Obs: []uint8{0, 1, 2, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0}, Delay: DelSec(4)},
 				{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(99)},

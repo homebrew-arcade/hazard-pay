@@ -22,7 +22,7 @@ func MakeGameState() *GameState {
 		LvlInd:  0,
 		Lvls:    MakeLevels(),
 		P1Score: 0,
-		P1Lives: 0,
+		P1Lives: 3,
 		Credits: 0,
 		IdleF:   0,
 		IsIdle:  false,

@@ -1,9 +1,12 @@
 package game
 
 import (
+	"fmt"
+	"image"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 type SceneGame struct {
@@ -60,9 +63,14 @@ func (s *SceneGame) Enter() {
 }
 
 func (s *SceneGame) Update() error {
+	s.gs.P1Score++
 	s.updateWorkerMovement()
 	s.updateObstacles()
 	s.updateCollisions()
+
+	if s.gs.P1Lives == 0 {
+		log.Fatal("Game over")
+	}
 
 	return nil
 }
@@ -106,6 +114,13 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(obs.X), float64(obs.Y))
 		screen.DrawImage(ImgsObstacles[obs.Type], op)
+	}
+
+	if Debug {
+		ebitenutil.DebugPrint(
+			screen,
+			fmt.Sprintf("Lives: %v, Score: %v", s.gs.P1Lives, s.gs.P1Score),
+		)
 	}
 }
 
@@ -300,5 +315,54 @@ func (s *SceneGame) dequeueObstacles() {
 }
 
 func (s *SceneGame) updateCollisions() {
+	wRects := make([]image.Rectangle, 3)
+	for i, mov := range []Movable{*s.wA, *s.wB, *s.wC} {
+		ix := int(mov.X)
+		iy := int(mov.Y)
+		wRects[i] = image.Rect(
+			ix+ObsHitPad,
+			iy+ObsHitPad,
+			ix+TileSize-ObsHitPad,
+			iy+TileSize-ObsHitPad,
+		)
+	}
+	for obsI, obs := range s.obsFalling {
+		ix := int(obs.X)
+		iy := int(obs.Y)
+		obsR := image.Rect(
+			ix+ObsHitPad,
+			iy+ObsHitPad,
+			ix+TileSize-ObsHitPad,
+			iy+TileSize-ObsHitPad,
+		)
+
+		for wI, wR := range wRects {
+			if wR.Overlaps(obsR) {
+				s.handleCollision(obs.Type, wI)
+				s.obsDequeue = append(s.obsDequeue, uint16(obsI))
+			}
+		}
+	}
+}
+
+func (s *SceneGame) handleCollision(obsType uint8, wInd int) {
+	fmt.Println("COLLISION", wInd, obsType)
+	switch obsType {
+	case ObstacleBucket:
+		//TODO: hold stun
+		if s.gs.P1Score <= 1000 {
+			s.gs.P1Score = 0
+		} else {
+			s.gs.P1Score -= 1000
+		}
+	case ObstacleBeam:
+		if s.gs.P1Lives > 0 {
+			s.gs.P1Lives--
+		}
+	case ObstacleSandwich:
+		s.gs.P1Score += 500
+	case ObstacleCash:
+		s.gs.P1Score += 1000
+	}
 
 }
