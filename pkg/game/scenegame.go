@@ -9,19 +9,29 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
+type SGState = uint8
+
+const (
+	SGStatePlaying SGState = iota
+	SGStateDying
+	SGStateDeload
+)
+
 type SceneGame struct {
 	gr         GameRoot
 	lvl        GameLevel
 	obsPreview LObsRow // Preview obstacles
 	gs         *GameState
 	cm         *CharacterMap
-	textTest   *FontText
+	msgText    *FontText
 	pls        []*Player
 	pRows      []PlayerRow
 	pltSprs    []Sprite
 	obsFalling []FallingObstacle // Falling obstacles May have many
 	obsDequeue []uint16          // falling indicies to remove before next loop
 	delayRmnd  int16
+	dyingF     int16
+	sgState    SGState
 	leftKeyDb  uint8 // debounce counter
 	rightKeyDb uint8 // debounce counter
 	obsRowInd  uint8
@@ -30,7 +40,7 @@ type SceneGame struct {
 type Player struct {
 	X     int16
 	Y     int16
-	DazeF uint8 // Daze frames to Hold on bucket
+	DazeF uint16 // Daze frames to Hold on bucket
 	AnimF uint8
 	Hold  bool
 	DirR  bool // used for flip scale
@@ -59,22 +69,36 @@ func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
 	s.lvl = (*gs.Lvls)[gs.LvlInd]
 	s.obsPreview = s.lvl.Obs[s.obsRowInd]
 	s.delayRmnd = s.obsPreview.Delay
+	s.sgState = SGStatePlaying
+	s.dyingF = TPS * 4
 }
 
 func (s *SceneGame) Enter() {
 	// Set up level
 	s.makeWorkerPlatforms()
 	s.cm = MakeCharacterMap(ImgFont)
-	s.textTest = MakeFontText(s.cm, []string{
-		"Hello World",
-		"This is Sample Text",
-	})
-	s.textTest.X = 8
-	s.textTest.Y = 40
-	s.textTest.LineSpace = 4
+	s.msgText = MakeFontText(s.cm, []string{})
+	s.msgText.X = 8
+	s.msgText.Y = 40
+	s.msgText.LineSpace = 4
+	s.msgText.SetText(Messages[s.obsPreview.MsgInd])
 }
 
 func (s *SceneGame) Update() error {
+	if s.sgState == SGStateDying {
+		if s.dyingF <= 0 {
+			s.dyingF = 0
+			s.sgState = SGStateDeload
+		}
+		s.updateObstacles()
+		s.dyingF--
+		return nil
+	}
+	if s.sgState == SGStateDeload {
+		s.gr.SetScene(&SceneGame{})
+		return nil
+	}
+
 	s.gs.P1Score++
 	s.updateWorkerMovement()
 	s.updateObstacles()
@@ -136,7 +160,7 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 	}
 
 	//screen.DrawImage(ImgFont, &ebiten.DrawImageOptions{})
-	s.textTest.Draw(screen)
+	s.msgText.Draw(screen)
 }
 
 func (s *SceneGame) Exit() {
@@ -268,6 +292,11 @@ func (s *SceneGame) updateObstacles() {
 			log.Fatal("end of level rows")
 		}
 		s.obsPreview = s.lvl.Obs[s.obsRowInd]
+		if s.obsPreview.MsgInd > 0 && int(s.obsPreview.MsgInd) < len(Messages) {
+			s.msgText.SetText(Messages[s.obsPreview.MsgInd])
+		} else {
+			s.msgText.SetText([]string{})
+		}
 		s.delayRmnd = s.obsPreview.Delay
 	}
 
@@ -307,11 +336,11 @@ func (s *SceneGame) dequeueObstacles() {
 }
 
 func (s *SceneGame) updateCollisions() {
-	wRects := make([]image.Rectangle, 3)
+	pRects := make([]image.Rectangle, 3)
 	for i, pl := range s.pls {
 		ix := int(pl.X)
 		iy := int(pl.Y)
-		wRects[i] = image.Rect(
+		pRects[i] = image.Rect(
 			ix+ObsHitPad,
 			iy+ObsHitPad,
 			ix+TileSize-ObsHitPad,
@@ -328,20 +357,30 @@ func (s *SceneGame) updateCollisions() {
 			iy+TileSize-ObsHitPad,
 		)
 
-		for wI, wR := range wRects {
-			if wR.Overlaps(obsR) {
-				s.handleCollision(obs.Type, wI)
+		for pI, pR := range pRects {
+			if pR.Overlaps(obsR) {
 				s.obsDequeue = append(s.obsDequeue, uint16(obsI))
+				lostLife := s.handleCollision(obs.Type, pI)
+				if lostLife {
+					s.sgState = SGStateDying
+					s.msgText.SetText([]string{"Ouch! Try to be more careful"})
+				}
+				// Don't process other collisions
+				return
 			}
 		}
 	}
 }
 
-func (s *SceneGame) handleCollision(obsType uint8, wInd int) {
-	fmt.Println("COLLISION", wInd, obsType)
+func (s *SceneGame) handleCollision(obsType uint8, pInd int) bool {
+	fmt.Println("COLLISION", pInd, obsType)
 	switch obsType {
 	case ObstacleBucket:
-		//TODO: hold stun
+		if s.pls[pInd].DazeF > 0 {
+			s.gs.P1Lives--
+			return true
+		}
+		s.pls[pInd].DazeF = TPS * 3
 		if s.gs.P1Score <= 1000 {
 			s.gs.P1Score = 0
 		} else {
@@ -350,11 +389,12 @@ func (s *SceneGame) handleCollision(obsType uint8, wInd int) {
 	case ObstacleBeam:
 		if s.gs.P1Lives > 0 {
 			s.gs.P1Lives--
+			return true
 		}
 	case ObstacleSandwich:
 		s.gs.P1Score += 500
 	case ObstacleCash:
 		s.gs.P1Score += 1000
 	}
-
+	return false
 }

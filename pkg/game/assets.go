@@ -3,6 +3,7 @@ package game
 import (
 	"embed"
 	"image"
+	"image/color"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -61,8 +62,8 @@ var ImgObstacleSheet = func() *ebiten.Image {
 }()
 
 var ImgsObstacles = func() []*ebiten.Image {
-	imgs := make([]*ebiten.Image, 5)
-	for i := range 5 {
+	imgs := make([]*ebiten.Image, 6)
+	for i := range 6 {
 		imgs[i] = ImgObstacleSheet.SubImage(image.Rect(i*TileSize, 0, i*TileSize+TileSize, TileSize)).(*ebiten.Image)
 	}
 	return imgs
@@ -70,7 +71,7 @@ var ImgsObstacles = func() []*ebiten.Image {
 
 // Font in pixelfont
 var ImgFont = func() *ebiten.Image {
-	img, err := LoadPFImage(embedFS, "assets/Arcade_King_of_Fighters_97_Italic_(SNK).pf", nil, nil)
+	img, err := LoadPFImage(embedFS, "assets/Arcade_King_of_Fighters_97_Italic_(SNK).pf", color.NRGBA{R: 51, G: 57, B: 65, A: 255}, nil)
 	if err != nil {
 		log.Fatal("error loading font")
 	}

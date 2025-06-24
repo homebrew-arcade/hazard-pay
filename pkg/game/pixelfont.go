@@ -68,7 +68,8 @@ type CharacterMap struct {
 }
 
 func (cm *CharacterMap) GetFromIndex(i uint8) *ebiten.Image {
-	if int(i) >= len(cm.CharImgs) {
+	if int(i) >= len(cm.CharImgs) || i == 0 {
+		// 0 is space and skippable
 		return nil
 	}
 	return cm.CharImgs[i]
@@ -107,9 +108,11 @@ type FontText struct {
 	LineSpace uint8
 	CharImgs  [][]*ebiten.Image
 	CharMap   *CharacterMap
+	CharMask  uint16
 }
 
 func (ft *FontText) SetText(txts []string) {
+	ft.CharMask = 0
 	rowMax := len(txts)
 	ft.CharImgs = make([][]*ebiten.Image, rowMax)
 	lineMax := 0
@@ -125,8 +128,17 @@ func (ft *FontText) SetText(txts []string) {
 	}
 }
 func (ft *FontText) Draw(dstImg *ebiten.Image) {
+	maskInd := 0
 	for li, ln := range ft.CharImgs {
 		for ci, cim := range ln {
+			if maskInd > int(ft.CharMask) {
+				ft.CharMask = uint16(maskInd)
+				return
+			}
+			maskInd++
+			if cim == nil {
+				continue
+			}
 			ob := ebiten.DrawImageOptions{}
 			ls := 0
 			if li > 0 {
