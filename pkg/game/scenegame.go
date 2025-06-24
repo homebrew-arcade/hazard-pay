@@ -10,38 +10,42 @@ import (
 )
 
 type SceneGame struct {
-	gr      GameRoot
-	lvl     GameLevel
-	gs      *GameState
-	wA      *Movable     // Player A
-	wB      *Movable     // Worker B
-	wC      *Movable     // Worker C
-	mRows   [][]*Movable // Platform/worker resolvers
-	pltSprs []Sprite
-
-	wSprs      []Sprite
+	gr         GameRoot
+	lvl        GameLevel
+	obsPreview LObsRow // Preview obstacles
+	gs         *GameState
+	cm         *CharacterMap
+	textTest   *FontText
+	pls        []*Player
+	pRows      []PlayerRow
+	pltSprs    []Sprite
+	obsFalling []FallingObstacle // Falling obstacles May have many
+	obsDequeue []uint16          // falling indicies to remove before next loop
+	delayRmnd  int16
 	leftKeyDb  uint8 // debounce counter
 	rightKeyDb uint8 // debounce counter
 	obsRowInd  uint8
-	delayRmnd  int16
-	obsPreview ObsRow            // Preview obstacles
-	obsFalling []FallingObstacle // Falling obstacles May have many
-	obsDequeue []uint16          // falling indicies to remove before next loop
-	cm         *CharacterMap
-	textTest   *FontText
 }
 
-type Movable struct {
-	X        int16
-	Y        int16
-	Hold     bool
-	IsWorker bool
+type Player struct {
+	X     int16
+	Y     int16
+	DazeF uint8 // Daze frames to Hold on bucket
+	AnimF uint8
+	Hold  bool
+	DirR  bool // used for flip scale
+}
+
+type PlayerRow struct {
+	Pls []*Player
+	LB  int16
+	RB  int16
 }
 
 type FallingObstacle struct {
-	Type uint8
 	X    int16
 	Y    int16
+	Type uint8
 }
 
 const ObsHitPad = 3 // 10px of 16
@@ -53,7 +57,6 @@ func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
 	s.gr = gr
 	s.gs = gs
 	s.lvl = (*gs.Lvls)[gs.LvlInd]
-	s.wSprs = make([]Sprite, 3)
 	s.obsPreview = s.lvl.Obs[s.obsRowInd]
 	s.delayRmnd = s.obsPreview.Delay
 }
@@ -67,7 +70,7 @@ func (s *SceneGame) Enter() {
 		"This is Sample Text",
 	})
 	s.textTest.X = 8
-	s.textTest.Y = 8
+	s.textTest.Y = 40
 	s.textTest.LineSpace = 4
 }
 
@@ -96,14 +99,7 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 		op.GeoM.Translate(float64(sp.X), float64(sp.Y))
 		screen.DrawImage(sp.Img, op)
 	}
-	for _, sp := range s.wSprs {
-		if sp.Img == nil {
-			continue
-		}
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(float64(sp.X), float64(sp.Y))
-		screen.DrawImage(sp.Img, op)
-	}
+
 	for tx, obsType := range s.obsPreview.Obs {
 		if obsType == 0 {
 			continue
@@ -114,6 +110,13 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(tx*TileSize+TileSize), 0)
 		screen.DrawImage(ImgsObstacles[obsType], op)
+	}
+
+	for _, pl := range s.pls {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(pl.X), float64(pl.Y))
+		// TODO UPDATE FRAME
+		screen.DrawImage(ImgWorkerStatic, op)
 	}
 
 	for _, obs := range s.obsFalling {
@@ -141,18 +144,12 @@ func (s *SceneGame) Exit() {
 }
 
 func (s *SceneGame) makeWorkerPlatforms() {
-	s.mRows = make([][]*Movable, len(s.lvl.WRows))
-	for i, wRow := range s.lvl.WRows {
-		// Allocate empty bumper
-		mRow := make([]*Movable, 1, 5)
-		lbM := Movable{
-			X:        int16(wRow.LBnd) * TileSize,
-			Y:        ScreenHeight - TileSize - (int16(wRow.ZPos) * TileSize),
-			Hold:     true,
-			IsWorker: false,
-		}
-		mRow[0] = &lbM
-		s.mRows[i] = mRow
+	for _, wRow := range s.lvl.WRows {
+		s.pRows = append(s.pRows, PlayerRow{
+			LB:  int16(wRow.LBnd) * TileSize,
+			RB:  int16(wRow.RBnd) * TileSize,
+			Pls: make([]*Player, 0),
+		})
 
 		// Draw Platform
 		for i := range wRow.RBnd - 1 - wRow.LBnd {
@@ -163,73 +160,58 @@ func (s *SceneGame) makeWorkerPlatforms() {
 			})
 		}
 	}
+	s.pls = make([]*Player, len(s.lvl.WPos))
 	for _, wPos := range s.lvl.WPos {
-		wMov := Movable{
-			X:        int16(wPos.RowPos) * TileSize,
-			Y:        ScreenHeight - (TileSize * 3) - (int16(s.lvl.WRows[wPos.RowInd].ZPos) * TileSize),
-			Hold:     false,
-			IsWorker: true,
+		pl := &Player{
+			X:    int16(wPos.RowPos) * TileSize,
+			Y:    ScreenHeight - (TileSize * 3) - (int16(s.lvl.WRows[wPos.RowInd].ZPos) * TileSize),
+			Hold: false,
 		}
-		spr := Sprite{
-			X:   wMov.X,
-			Y:   wMov.Y,
-			Img: ImgWorkerStatic,
-		}
+
 		switch wPos.WID {
 		case 0:
-			s.wA = &wMov
-			s.wSprs[0] = spr
+			s.pls[0] = pl
 		case 1:
-			s.wB = &wMov
-			s.wSprs[1] = spr
+			s.pls[1] = pl
 		case 2:
-			s.wC = &wMov
-			s.wSprs[2] = spr
+			s.pls[2] = pl
 		default:
 			log.Fatal("Bad WorkerPos WID")
 		}
-		s.mRows[wPos.RowInd] = append(s.mRows[wPos.RowInd], &wMov)
-	}
-	for i, wRow := range s.lvl.WRows {
-		// Allocate empty bumper
-		rbM := Movable{
-			X:        int16(wRow.RBnd) * TileSize,
-			Y:        ScreenHeight - TileSize - (int16(wRow.ZPos) * TileSize),
-			Hold:     true,
-			IsWorker: false,
-		}
-		s.mRows[i] = append(s.mRows[i], &rbM)
+		//s.mRows[wPos.RowInd] = append(s.mRows[wPos.RowInd], pl)
+
+		s.pRows[wPos.RowInd].Pls = append(s.pRows[wPos.RowInd].Pls, pl)
 	}
 }
 
 func (s *SceneGame) updateWorkerMovement() {
-	s.wA.Hold = false
-	s.wB.Hold = false
-	s.wC.Hold = false
-	if ebiten.IsKeyPressed(ebiten.KeyJ) {
-		s.wA.Hold = true
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyK) {
-		s.wB.Hold = true
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyL) {
-		s.wC.Hold = true
+	plLen := len(s.pls)
+
+	// Handle Hold state with input and Daze
+	for i := range plLen {
+		s.pls[i].Hold = InputIsHoldPressed(plLen, i)
+		if s.pls[i].DazeF > 0 {
+			s.pls[i].DazeF--
+			s.pls[i].Hold = true
+		}
 	}
 
-	if ebiten.IsKeyPressed(ebiten.KeyA) {
+	if InputIsLeftPressed() {
 		if s.leftKeyDb == 0 || s.leftKeyDb > KeyDBLimit {
-			for _, mRow := range s.mRows {
+			for _, pRow := range s.pRows {
 				// start from left, slide unheld
-				for i := 0; i < len(mRow); i++ {
-					m := mRow[i]
+				prevBnd := pRow.LB + TileSize
+				for i := 0; i < len(pRow.Pls); i++ {
+					m := pRow.Pls[i]
 					if m.Hold {
+						prevBnd = m.X + TileSize
 						continue
 					}
-					mp := mRow[i-1]
 					m.X -= XVel
-					if m.X < mp.X+TileSize {
-						m.X = mp.X + TileSize
+					if m.X < prevBnd {
+						m.X = prevBnd
 					}
+					prevBnd = m.X + TileSize
 				}
 			}
 		}
@@ -239,20 +221,22 @@ func (s *SceneGame) updateWorkerMovement() {
 	} else {
 		s.leftKeyDb = 0
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyD) {
+	if InputIsRightPressed() {
 		if s.rightKeyDb == 0 || s.rightKeyDb > KeyDBLimit {
-			for _, mRow := range s.mRows {
+			for _, pRow := range s.pRows {
 				// start from right, slide unheld
-				for i := len(mRow) - 1; i >= 0; i-- {
-					m := mRow[i]
+				prevBnd := pRow.RB
+				for i := len(pRow.Pls) - 1; i >= 0; i-- {
+					m := pRow.Pls[i]
 					if m.Hold {
+						prevBnd = m.X
 						continue
 					}
-					mp := mRow[i+1]
 					m.X += XVel
-					if m.X+TileSize > mp.X {
-						m.X = mp.X - TileSize
+					if m.X+TileSize > prevBnd {
+						m.X = prevBnd - TileSize
 					}
+					prevBnd = m.X
 				}
 			}
 		}
@@ -262,10 +246,6 @@ func (s *SceneGame) updateWorkerMovement() {
 	} else {
 		s.rightKeyDb = 0
 	}
-
-	s.wSprs[0].X = s.wA.X
-	s.wSprs[1].X = s.wB.X
-	s.wSprs[2].X = s.wC.X
 }
 
 func (s *SceneGame) updateObstacles() {
@@ -328,9 +308,9 @@ func (s *SceneGame) dequeueObstacles() {
 
 func (s *SceneGame) updateCollisions() {
 	wRects := make([]image.Rectangle, 3)
-	for i, mov := range []Movable{*s.wA, *s.wB, *s.wC} {
-		ix := int(mov.X)
-		iy := int(mov.Y)
+	for i, pl := range s.pls {
+		ix := int(pl.X)
+		iy := int(pl.Y)
 		wRects[i] = image.Rect(
 			ix+ObsHitPad,
 			iy+ObsHitPad,

@@ -2,7 +2,6 @@ package game
 
 import (
 	"embed"
-	"fmt"
 	"image"
 	"image/color"
 
@@ -13,7 +12,6 @@ type PFData []byte
 
 func OpenPFFile(fs embed.FS, p string) (PFData, error) {
 	buf, err := fs.ReadFile(p)
-	fmt.Println(len(buf))
 	if err != nil {
 		return make(PFData, 0), err
 	}
@@ -43,7 +41,6 @@ func PFToPalettedImage(pf PFData, fontColor color.Color, bgColor color.Color) im
 		charCol := (charInd % 16)
 		py := (byi % 8) + (charRow * 8)
 		px := charCol * 8
-		fmt.Println(charInd, charCol, charRow, py)
 		for bti, btt := range []uint8{7, 6, 5, 4, 3, 2, 1, 0} {
 			var c color.Color = bgColor
 			if (byt>>btt)&1 == 1 {
@@ -71,14 +68,12 @@ type CharacterMap struct {
 }
 
 func (cm *CharacterMap) GetFromIndex(i uint8) *ebiten.Image {
-	fmt.Println("index", i)
 	if int(i) >= len(cm.CharImgs) {
 		return nil
 	}
 	return cm.CharImgs[i]
 }
 func (cm *CharacterMap) GetFromRune(r rune) *ebiten.Image {
-	fmt.Println("rune", r)
 	if r > 255+AsciiOffset || r < AsciiOffset {
 		r = 0
 	}
