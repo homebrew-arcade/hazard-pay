@@ -58,10 +58,15 @@ type FallingObstacle struct {
 	Type uint8
 }
 
-const ObsHitPad = 3 // 10px of 16
-const XVel = 1
-const FallVel = 1
-const KeyDBLimit = 4
+const (
+	ObsHitPad   = 3 // 10px of 16
+	XVel        = 1
+	FallVel     = 1
+	KeyDBLimit  = 4
+	MaxDaze     = TPS * 3
+	CashPts     = 10000
+	SandwichPts = 5000
+)
 
 func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
 	s.gr = gr
@@ -78,8 +83,8 @@ func (s *SceneGame) Enter() {
 	s.makeWorkerPlatforms()
 	s.cm = MakeCharacterMap(ImgFont)
 	s.msgText = MakeFontText(s.cm, []string{})
-	s.msgText.X = 8
-	s.msgText.Y = 40
+	s.msgText.X = 16
+	s.msgText.Y = 32
 	s.msgText.LineSpace = 4
 	s.msgText.SetText(Messages[s.obsPreview.MsgInd])
 }
@@ -95,6 +100,15 @@ func (s *SceneGame) Update() error {
 		return nil
 	}
 	if s.sgState == SGStateDeload {
+		if s.gs.LvlInd == 0 {
+			// Tutorial reset
+			s.gs.P1Score = 0
+			s.gs.P1Lives = 3
+			s.gs.P1Bombs = 2
+		}
+		if s.gs.P1Lives == 0 {
+			log.Fatal("Game over")
+		}
 		s.gr.SetScene(&SceneGame{})
 		return nil
 	}
@@ -103,10 +117,6 @@ func (s *SceneGame) Update() error {
 	s.updateWorkerMovement()
 	s.updateObstacles()
 	s.updateCollisions()
-
-	if s.gs.P1Lives == 0 {
-		log.Fatal("Game over")
-	}
 
 	return nil
 }
@@ -129,7 +139,7 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 			continue
 		}
 		if int(obsType) >= len(ImgsObstacles) {
-			log.Fatal("Obstacle Preview type not mappable to sprite sheet")
+			log.Fatal("Obstacle preview type not mappable to sprite sheet")
 		}
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(tx*TileSize+TileSize), 0)
@@ -138,6 +148,10 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 
 	for _, pl := range s.pls {
 		op := &ebiten.DrawImageOptions{}
+		if !pl.DirR {
+			op.GeoM.Translate(float64(TileSize*-1), 0)
+			op.GeoM.Scale(-1.0, 1.0)
+		}
 		op.GeoM.Translate(float64(pl.X), float64(pl.Y))
 		// TODO UPDATE FRAME
 		screen.DrawImage(ImgWorkerStatic, op)
@@ -202,7 +216,6 @@ func (s *SceneGame) makeWorkerPlatforms() {
 		default:
 			log.Fatal("Bad WorkerPos WID")
 		}
-		//s.mRows[wPos.RowInd] = append(s.mRows[wPos.RowInd], pl)
 
 		s.pRows[wPos.RowInd].Pls = append(s.pRows[wPos.RowInd].Pls, pl)
 	}
@@ -226,16 +239,17 @@ func (s *SceneGame) updateWorkerMovement() {
 				// start from left, slide unheld
 				prevBnd := pRow.LB + TileSize
 				for i := 0; i < len(pRow.Pls); i++ {
-					m := pRow.Pls[i]
-					if m.Hold {
-						prevBnd = m.X + TileSize
+					pl := pRow.Pls[i]
+					if pl.Hold {
+						prevBnd = pl.X + TileSize
 						continue
 					}
-					m.X -= XVel
-					if m.X < prevBnd {
-						m.X = prevBnd
+					pl.DirR = false
+					pl.X -= XVel
+					if pl.X < prevBnd {
+						pl.X = prevBnd
 					}
-					prevBnd = m.X + TileSize
+					prevBnd = pl.X + TileSize
 				}
 			}
 		}
@@ -251,16 +265,17 @@ func (s *SceneGame) updateWorkerMovement() {
 				// start from right, slide unheld
 				prevBnd := pRow.RB
 				for i := len(pRow.Pls) - 1; i >= 0; i-- {
-					m := pRow.Pls[i]
-					if m.Hold {
-						prevBnd = m.X
+					pl := pRow.Pls[i]
+					if pl.Hold {
+						prevBnd = pl.X
 						continue
 					}
-					m.X += XVel
-					if m.X+TileSize > prevBnd {
-						m.X = prevBnd - TileSize
+					pl.DirR = true
+					pl.X += XVel
+					if pl.X+TileSize > prevBnd {
+						pl.X = prevBnd - TileSize
 					}
-					prevBnd = m.X
+					prevBnd = pl.X
 				}
 			}
 		}
@@ -270,11 +285,36 @@ func (s *SceneGame) updateWorkerMovement() {
 	} else {
 		s.rightKeyDb = 0
 	}
+
+	if InputIsBombJustPressed() {
+		if s.gs.LvlInd == 0 {
+			// Tutorial skip
+			s.gs.LvlInd++
+			s.sgState = SGStateDeload
+			return
+		}
+
+		if s.gs.P1Bombs > 0 {
+			fmt.Println("Bomb activated")
+			s.gs.P1Bombs--
+
+			// set all s.obsPreview.Obs to smoke tile
+			for i, currType := range s.obsPreview.Obs {
+				if currType == 0 {
+					continue
+				}
+				s.obsPreview.Obs[i] = ObstacleCloud
+			}
+			for i, _ := range s.obsFalling {
+				s.obsFalling[i].Type = ObstacleCloud
+			}
+		}
+	}
 }
 
 func (s *SceneGame) updateObstacles() {
 	s.delayRmnd--
-	if s.delayRmnd <= 0 {
+	if s.delayRmnd <= 0 && s.sgState == SGStatePlaying {
 		// copy into falling and swap
 		for tx, obsType := range s.obsPreview.Obs {
 			if obsType == 0 {
@@ -289,7 +329,13 @@ func (s *SceneGame) updateObstacles() {
 		}
 		s.obsRowInd++
 		if int(s.obsRowInd) >= len(s.lvl.Obs) {
-			log.Fatal("end of level rows")
+			s.gs.LvlInd++
+			if int(s.gs.LvlInd) >= len(*s.gs.Lvls) {
+				// TODO: Game Over
+				log.Fatal("No more levels")
+			}
+			s.sgState = SGStateDeload
+			return
 		}
 		s.obsPreview = s.lvl.Obs[s.obsRowInd]
 		if s.obsPreview.MsgInd > 0 && int(s.obsPreview.MsgInd) < len(Messages) {
@@ -363,38 +409,41 @@ func (s *SceneGame) updateCollisions() {
 				lostLife := s.handleCollision(obs.Type, pI)
 				if lostLife {
 					s.sgState = SGStateDying
-					s.msgText.SetText([]string{"Ouch! Try to be more careful"})
+					// TODO use Message index based on lives
+					switch s.gs.P1Lives {
+					case 2:
+						s.msgText.SetText(Messages[3])
+					case 1:
+						s.msgText.SetText(Messages[4])
+					case 0:
+						s.msgText.SetText(Messages[5])
+					default:
+						s.msgText.SetText(Messages[2])
+					}
+					return
 				}
-				// Don't process other collisions
-				return
 			}
 		}
 	}
 }
 
 func (s *SceneGame) handleCollision(obsType uint8, pInd int) bool {
-	fmt.Println("COLLISION", pInd, obsType)
 	switch obsType {
 	case ObstacleBucket:
-		if s.pls[pInd].DazeF > 0 {
+		if s.pls[pInd].DazeF > 0 && s.pls[pInd].DazeF < MaxDaze-32 {
 			s.gs.P1Lives--
 			return true
 		}
-		s.pls[pInd].DazeF = TPS * 3
-		if s.gs.P1Score <= 1000 {
-			s.gs.P1Score = 0
-		} else {
-			s.gs.P1Score -= 1000
-		}
+		s.pls[pInd].DazeF = MaxDaze
 	case ObstacleBeam:
 		if s.gs.P1Lives > 0 {
 			s.gs.P1Lives--
 			return true
 		}
 	case ObstacleSandwich:
-		s.gs.P1Score += 500
+		s.gs.P1Score += SandwichPts
 	case ObstacleCash:
-		s.gs.P1Score += 1000
+		s.gs.P1Score += CashPts
 	}
 	return false
 }

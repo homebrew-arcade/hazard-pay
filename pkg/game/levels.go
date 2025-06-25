@@ -16,6 +16,7 @@ type LWorkerPos struct {
 	RowPos uint8
 }
 
+const ObstacleTileCount = 7
 const (
 	ObstacleNil uint8 = iota
 	ObstacleBeam
@@ -23,6 +24,7 @@ const (
 	ObstacleSandwich
 	ObstacleCash
 	ObstacleBomb
+	ObstacleCloud
 )
 
 type LObsRow struct {
@@ -70,6 +72,24 @@ func MakeLevels() *[]GameLevel {
 				{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(7), MsgInd: 17},
 				{Obs: []uint8{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5}, Delay: DelSec(4), MsgInd: 18},
 				{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(4), MsgInd: 19},
+				{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(4), MsgInd: 1},
+				{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: 0},
+			},
+		},
+		{
+			WRows: []LWorkerRow{
+				{LBnd: 0, RBnd: 21, ZPos: 1},
+				//{LBnd: 0, RBnd: 21, ZPos: 2},
+				//{LBnd: 0, RBnd: 21, ZPos: 3},
+			},
+			WPos: []LWorkerPos{
+				{WID: 0, RowInd: 0, RowPos: 10},
+				//{WID: 1, RowInd: 0, RowPos: 10},
+				//{WID: 2, RowInd: 0, RowPos: 11},
+			},
+			Obs: []LObsRow{
+				{Obs: []uint8{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, Delay: DelSec(5), MsgInd: 21},
+				{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(3)},
 				{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(4), MsgInd: 1},
 				{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: 0},
 			},

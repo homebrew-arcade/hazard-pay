@@ -62,8 +62,8 @@ var ImgObstacleSheet = func() *ebiten.Image {
 }()
 
 var ImgsObstacles = func() []*ebiten.Image {
-	imgs := make([]*ebiten.Image, 6)
-	for i := range 6 {
+	imgs := make([]*ebiten.Image, ObstacleTileCount)
+	for i := range ObstacleTileCount {
 		imgs[i] = ImgObstacleSheet.SubImage(image.Rect(i*TileSize, 0, i*TileSize+TileSize, TileSize)).(*ebiten.Image)
 	}
 	return imgs

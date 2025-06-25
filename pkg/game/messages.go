@@ -4,7 +4,7 @@ package game
 var Messages = [][]string{
 	// 0 - Empty default
 	{},
-	//  "                                          "
+	//  "                                        ",
 	// 1
 	{
 		"Stage Clear!",
@@ -19,7 +19,7 @@ var Messages = [][]string{
 	},
 	// 4
 	{
-		"You're gonna get me fired!",
+		"You're gonna get ME fired!",
 	},
 	// 5
 	{
@@ -32,13 +32,13 @@ var Messages = [][]string{
 	},
 	// 7
 	{
-		"This is a demolition site",
-		"Lookout for falling objects!",
+		"This is a demolition site.",
+		"Look out for falling objects!",
 	},
 	// 8
 	{
-		"You're the Foreman, and you'll tell the",
-		"workers where to move to stay safe!",
+		"You're the Foreman, and you gotta tell",
+		"the workers where to move to stay safe.",
 	},
 	// 9
 	{
@@ -52,25 +52,25 @@ var Messages = [][]string{
 	},
 	// 11
 	{
-		"Workers on the same beam can't pass each",
-		"other",
+		"Workers on the same beam can't pass",
+		"each other",
 	},
 	// 12
 	{
-		"Sandwiches are a tasty treat worth 500pts",
-		"Grab these as they fall",
+		"Sandwiches are a tasty treat worth $5k.",
+		"Grab them as they fall.",
 	},
 	// 13
 	{
-		"I know this is dangerous work",
-		"Cash counts for 1000pts",
+		"I know this is dangerous work.",
+		"Cash wads hold $10k if you're brave.",
 		"I hope it's worth the risk!",
 	},
 	// 14
 	{
-		"Buckets will give em' a nasty bump",
+		"Buckets will give em' a nasty bump.",
 		"They won't be able to move for a moment",
-		"after being hit",
+		"after being hit.",
 	},
 	// 15
 	{
@@ -90,7 +90,7 @@ var Messages = [][]string{
 	},
 	// 18
 	{
-		"Grab one when you see them, and save one",
+		"Grab one when you see them, and save it",
 		"for the next sticky situation.",
 	},
 	// 19
@@ -102,10 +102,10 @@ var Messages = [][]string{
 	{
 		"Good Luck!",
 	},
-	// 20
+	// 21
 	{
 		"Day 1 - Monday",
 		"Let's start with a single worker",
 	},
-	// 21
+	// 22
 }
