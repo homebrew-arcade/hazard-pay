@@ -1,7 +1,6 @@
 package game
 
 type GameState struct {
-	Lvls    *[]GameLevel
 	IdleF   uint // Idle frame ticker for attract mode
 	P1Score uint
 	LvlInd  uint8
@@ -14,7 +13,6 @@ type GameState struct {
 func MakeGameState() *GameState {
 	gs := GameState{
 		LvlInd:  0,
-		Lvls:    MakeLevels(),
 		P1Score: 0,
 		P1Lives: 3,
 		P1Bombs: 2,

@@ -103,12 +103,13 @@ func MakeCharacterMap(fontImg *ebiten.Image) *CharacterMap {
 }
 
 type FontText struct {
-	X         int16
-	Y         int16
-	LineSpace uint8
-	CharImgs  [][]*ebiten.Image
-	CharMap   *CharacterMap
-	CharMask  uint16
+	CharImgs   [][]*ebiten.Image
+	CharMap    *CharacterMap
+	X          int16
+	Y          int16
+	CharMask   uint16
+	LineSpace  uint8
+	RightAlign bool
 }
 
 func (ft *FontText) SetText(txts []string) {
@@ -144,8 +145,12 @@ func (ft *FontText) Draw(dstImg *ebiten.Image) {
 			if li > 0 {
 				ls = int(ft.LineSpace) * li
 			}
+			xOff := 0
+			if ft.RightAlign {
+				xOff = len(ft.CharImgs) * 8
+			}
 			ob.GeoM.Translate(
-				float64(int(ft.X)+ci*8),
+				float64(int(ft.X)-xOff+ci*8),
 				float64(int(ft.Y)+li*8+ls),
 			)
 			dstImg.DrawImage(cim, &ob)
@@ -158,5 +163,46 @@ func MakeFontText(cm *CharacterMap, txts []string) *FontText {
 		CharMap: cm,
 	}
 	ft.SetText(txts)
+	return ft
+}
+
+type FontTextBasic struct {
+	CharImgs   []*ebiten.Image
+	CharMap    *CharacterMap
+	X          int16
+	Y          int16
+	RightAlign bool
+}
+
+func (ft *FontTextBasic) SetText(txt string) {
+	ft.CharImgs = ft.CharImgs[:0]
+	for _, r := range txt {
+		ft.CharImgs = append(ft.CharImgs, ft.CharMap.GetFromRune(r))
+	}
+}
+func (ft *FontTextBasic) Draw(dstImg *ebiten.Image) {
+	for ci, cim := range ft.CharImgs {
+		if cim == nil {
+			continue
+		}
+		ob := ebiten.DrawImageOptions{}
+		xOff := 0
+		if ft.RightAlign {
+			xOff = len(ft.CharImgs) * 8
+		}
+		ob.GeoM.Translate(
+			float64(int(ft.X)-xOff+ci*8),
+			float64(ft.Y),
+		)
+		dstImg.DrawImage(cim, &ob)
+	}
+}
+
+func MakeFontTextBasic(cm *CharacterMap, txt string) *FontTextBasic {
+	ft := &FontTextBasic{
+		CharMap:  cm,
+		CharImgs: make([]*ebiten.Image, 0),
+	}
+	ft.SetText(txt)
 	return ft
 }

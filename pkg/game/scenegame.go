@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 type SGState = uint8
@@ -22,8 +21,8 @@ type SceneGame struct {
 	lvl        GameLevel
 	obsPreview LObsRow // Preview obstacles
 	gs         *GameState
-	cm         *CharacterMap
 	msgText    *FontText
+	scoreText  *FontTextBasic
 	pls        []*Player
 	pRows      []PlayerRow
 	pltSprs    []Sprite
@@ -66,12 +65,13 @@ const (
 	MaxDaze     = TPS * 3
 	CashPts     = 10000
 	SandwichPts = 5000
+	CloudPts    = 1000
 )
 
 func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
 	s.gr = gr
 	s.gs = gs
-	s.lvl = (*gs.Lvls)[gs.LvlInd]
+	s.lvl = (*Levels)[gs.LvlInd]
 	s.obsPreview = s.lvl.Obs[s.obsRowInd]
 	s.delayRmnd = s.obsPreview.Delay
 	s.sgState = SGStatePlaying
@@ -81,12 +81,16 @@ func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
 func (s *SceneGame) Enter() {
 	// Set up level
 	s.makeWorkerPlatforms()
-	s.cm = MakeCharacterMap(ImgFont)
-	s.msgText = MakeFontText(s.cm, []string{})
+	s.msgText = MakeFontText(CM, []string{})
 	s.msgText.X = 16
 	s.msgText.Y = 32
 	s.msgText.LineSpace = 4
 	s.msgText.SetText(Messages[s.obsPreview.MsgInd])
+
+	s.scoreText = MakeFontTextBasic(CM, "$0.00")
+	s.scoreText.RightAlign = true
+	s.scoreText.X = 464
+	s.scoreText.Y = 48
 }
 
 func (s *SceneGame) Update() error {
@@ -114,6 +118,7 @@ func (s *SceneGame) Update() error {
 	}
 
 	s.gs.P1Score++
+	s.scoreText.SetText(fmt.Sprintf("$%.2f", float32(s.gs.P1Score)/100))
 	s.updateWorkerMovement()
 	s.updateObstacles()
 	s.updateCollisions()
@@ -166,14 +171,23 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 		screen.DrawImage(ImgsObstacles[obs.Type], op)
 	}
 
-	if Debug {
-		ebitenutil.DebugPrint(
-			screen,
-			fmt.Sprintf("Lives: %v, Score: %v", s.gs.P1Lives, s.gs.P1Score),
-		)
+	// Draw lives icons
+	for i := range s.gs.P1Lives {
+		op := &ebiten.DrawImageOptions{}
+		xPos := 464 - (int(s.gs.P1Lives) * TileSize)
+		op.GeoM.Translate(float64(xPos+int(i)*TileSize), 80.0)
+		screen.DrawImage(ImgsObstacles[IconLife], op)
 	}
 
-	//screen.DrawImage(ImgFont, &ebiten.DrawImageOptions{})
+	// Draw bomb icons
+	for i := range s.gs.P1Bombs {
+		op := &ebiten.DrawImageOptions{}
+		xPos := 464 - (int(s.gs.P1Bombs) * TileSize)
+		op.GeoM.Translate(float64(xPos+int(i)*TileSize), 112)
+		screen.DrawImage(ImgsObstacles[ObstacleBomb], op)
+	}
+
+	s.scoreText.Draw(screen)
 	s.msgText.Draw(screen)
 }
 
@@ -330,7 +344,7 @@ func (s *SceneGame) updateObstacles() {
 		s.obsRowInd++
 		if int(s.obsRowInd) >= len(s.lvl.Obs) {
 			s.gs.LvlInd++
-			if int(s.gs.LvlInd) >= len(*s.gs.Lvls) {
+			if int(s.gs.LvlInd) >= len(*Levels) {
 				// TODO: Game Over
 				log.Fatal("No more levels")
 			}
@@ -444,6 +458,16 @@ func (s *SceneGame) handleCollision(obsType uint8, pInd int) bool {
 		s.gs.P1Score += SandwichPts
 	case ObstacleCash:
 		s.gs.P1Score += CashPts
+	case ObstacleBomb:
+		if s.gs.P1Bombs < 6 {
+			s.gs.P1Bombs++
+		}
+	case ObstacleCloud:
+		s.gs.P1Score += CloudPts
+	case IconLife:
+		if s.gs.P1Lives < 6 {
+			s.gs.P1Lives++
+		}
 	}
 	return false
 }

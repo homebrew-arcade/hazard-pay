@@ -57,13 +57,13 @@ var Messages = [][]string{
 	},
 	// 12
 	{
-		"Sandwiches are a tasty treat worth $5k.",
+		"Sandwiches are a tasty treat worth $50.",
 		"Grab them as they fall.",
 	},
 	// 13
 	{
 		"I know this is dangerous work.",
-		"Cash wads hold $10k if you're brave.",
+		"Cash wads hold $100 if you're brave.",
 		"I hope it's worth the risk!",
 	},
 	// 14

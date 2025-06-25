@@ -32,14 +32,6 @@ var ImgWorkerStatic = func() *ebiten.Image {
 	return img
 }()
 
-var ImgPlatform = func() *ebiten.Image {
-	img, _, err := ebitenutil.NewImageFromFileSystem(embedFS, "assets/platform.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	return img
-}()
-
 var ImgForeman = func() *ebiten.Image {
 	img, _, err := ebitenutil.NewImageFromFileSystem(embedFS, "assets/foreman.png")
 	if err != nil {
@@ -69,6 +61,8 @@ var ImgsObstacles = func() []*ebiten.Image {
 	return imgs
 }()
 
+var ImgPlatform = ImgsObstacles[TilePlatform]
+
 // Font in pixelfont
 var ImgFont = func() *ebiten.Image {
 	img, err := LoadPFImage(embedFS, "assets/Arcade_King_of_Fighters_97_Italic_(SNK).pf", color.NRGBA{R: 51, G: 57, B: 65, A: 255}, nil)
@@ -77,3 +71,5 @@ var ImgFont = func() *ebiten.Image {
 	}
 	return ebiten.NewImageFromImage(img)
 }()
+
+var CM = MakeCharacterMap(ImgFont)
