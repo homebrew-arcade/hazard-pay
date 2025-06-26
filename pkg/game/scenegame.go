@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -30,19 +31,24 @@ type SceneGame struct {
 	obsDequeue []uint16          // falling indicies to remove before next loop
 	delayRmnd  int16
 	dyingF     int16
+	blinkF     int16
+	mouthF     int16
 	sgState    SGState
 	leftKeyDb  uint8 // debounce counter
 	rightKeyDb uint8 // debounce counter
 	obsRowInd  uint8
+	mouthInd   uint8
 }
 
 type Player struct {
-	X     int16
-	Y     int16
-	DazeF uint16 // Daze frames to Hold on bucket
-	AnimF uint8
-	Hold  bool
-	DirR  bool // used for flip scale
+	X         int16
+	Y         int16
+	DazeF     uint16 // Daze frames to Hold on bucket
+	AnimF     uint8  // Sheet index of current walk frame
+	AnimFHold uint8  // remaining TPS until next frame
+	IsMoving  bool
+	Hold      bool
+	DirR      bool // used for flip scale
 }
 
 type PlayerRow struct {
@@ -91,6 +97,8 @@ func (s *SceneGame) Enter() {
 	s.scoreText.RightAlign = true
 	s.scoreText.X = 464
 	s.scoreText.Y = 48
+
+	BgmPlayer.SetVolume(0.25)
 }
 
 func (s *SceneGame) Update() error {
@@ -116,13 +124,12 @@ func (s *SceneGame) Update() error {
 		s.gr.SetScene(&SceneGame{})
 		return nil
 	}
-
+	s.blinkF--
 	s.gs.P1Score++
 	s.scoreText.SetText(fmt.Sprintf("$%.2f", float32(s.gs.P1Score)/100))
 	s.updateWorkerMovement()
 	s.updateObstacles()
 	s.updateCollisions()
-
 	return nil
 }
 
@@ -158,8 +165,22 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 			op.GeoM.Scale(-1.0, 1.0)
 		}
 		op.GeoM.Translate(float64(pl.X), float64(pl.Y))
-		// TODO UPDATE FRAME
-		screen.DrawImage(ImgWorkerStatic, op)
+
+		if pl.IsMoving {
+			if pl.AnimFHold == 0 {
+				pl.AnimFHold = 4
+				pl.AnimF++
+				if pl.AnimF >= 8 {
+					pl.AnimF = 0
+				}
+			}
+			pl.AnimFHold--
+			screen.DrawImage(ImgsWorker[pl.AnimF+2], op)
+		} else if pl.DazeF > 0 {
+			screen.DrawImage(ImgsWorker[1], op)
+		} else {
+			screen.DrawImage(ImgsWorker[0], op)
+		}
 	}
 
 	for _, obs := range s.obsFalling {
@@ -187,6 +208,31 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 		screen.DrawImage(ImgsObstacles[ObstacleBomb], op)
 	}
 
+	// Blink
+	if s.blinkF <= 0 {
+		screen.DrawImage(ImgsFaceSheet[7], ImgBlinkOp)
+		if s.blinkF < -10 {
+			s.blinkF = 400 + int16(s.gs.P1Score%100)
+		}
+	}
+
+	// Move mouth if message on screen
+	if len(s.msgText.CharImgs) > 0 {
+		if s.mouthF <= 0 {
+			s.mouthF = 5 + int16(s.gs.P1Score%10)
+			s.mouthInd = uint8(rand.IntN(5)) + 1
+		}
+		s.mouthF--
+		screen.DrawImage(ImgsFaceSheet[s.mouthInd], ImgMouthOp)
+	} else {
+		screen.DrawImage(ImgsFaceSheet[0], ImgMouthOp)
+	}
+
+	// Maybe rework as an infinite stream, couldn't figure it out
+	if !BgmPlayer.IsPlaying() {
+		BgmPlayer.Rewind()
+		BgmPlayer.Play()
+	}
 	s.scoreText.Draw(screen)
 	s.msgText.Draw(screen)
 }
@@ -240,6 +286,7 @@ func (s *SceneGame) updateWorkerMovement() {
 
 	// Handle Hold state with input and Daze
 	for i := range plLen {
+		s.pls[i].IsMoving = false
 		s.pls[i].Hold = InputIsHoldPressed(plLen, i)
 		if s.pls[i].DazeF > 0 {
 			s.pls[i].DazeF--
@@ -264,6 +311,7 @@ func (s *SceneGame) updateWorkerMovement() {
 						pl.X = prevBnd
 					}
 					prevBnd = pl.X + TileSize
+					pl.IsMoving = true
 				}
 			}
 		}
@@ -290,6 +338,7 @@ func (s *SceneGame) updateWorkerMovement() {
 						pl.X = prevBnd - TileSize
 					}
 					prevBnd = pl.X
+					pl.IsMoving = true
 				}
 			}
 		}

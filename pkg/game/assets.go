@@ -24,12 +24,21 @@ var ImgGameBgDrawOp = func() *ebiten.DrawImageOptions {
 	return &ebiten.DrawImageOptions{}
 }()
 
-var ImgWorkerStatic = func() *ebiten.Image {
-	img, _, err := ebitenutil.NewImageFromFileSystem(embedFS, "assets/worker.png")
+const WorkerTileCount = 10
+
+var ImgWorkerSheet = func() *ebiten.Image {
+	img, _, err := ebitenutil.NewImageFromFileSystem(embedFS, "assets/workersheet.png")
 	if err != nil {
 		log.Fatal(err)
 	}
 	return img
+}()
+var ImgsWorker = func() []*ebiten.Image {
+	imgs := make([]*ebiten.Image, WorkerTileCount)
+	for i := range WorkerTileCount {
+		imgs[i] = ImgWorkerSheet.SubImage(image.Rect(i*TileSize, 0, i*TileSize+TileSize, TileSize*2)).(*ebiten.Image)
+	}
+	return imgs
 }()
 
 var ImgForeman = func() *ebiten.Image {
@@ -59,6 +68,34 @@ var ImgsObstacles = func() []*ebiten.Image {
 		imgs[i] = ImgObstacleSheet.SubImage(image.Rect(i*TileSize, 0, i*TileSize+TileSize, TileSize)).(*ebiten.Image)
 	}
 	return imgs
+}()
+
+var ImgFaceSheet = func() *ebiten.Image {
+	img, _, err := ebitenutil.NewImageFromFileSystem(embedFS, "assets/facesheet.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return img
+}()
+
+var ImgsFaceSheet = func() []*ebiten.Image {
+	// 7 mouth shapes and one blink
+	imgs := make([]*ebiten.Image, 8)
+	for i := range 7 {
+		imgs[i] = ImgFaceSheet.SubImage(image.Rect(i*(TileSize*2), 0, i*(TileSize*2)+(TileSize*2), TileSize)).(*ebiten.Image)
+	}
+	imgs[7] = ImgFaceSheet.SubImage(image.Rect(224, 0, 224+(TileSize*3), TileSize)).(*ebiten.Image)
+	return imgs
+}()
+var ImgBlinkOp = func() *ebiten.DrawImageOptions {
+	op := ebiten.DrawImageOptions{}
+	op.GeoM.Translate(384, 186)
+	return &op
+}()
+var ImgMouthOp = func() *ebiten.DrawImageOptions {
+	op := ebiten.DrawImageOptions{}
+	op.GeoM.Translate(397, 210)
+	return &op
 }()
 
 var ImgPlatform = ImgsObstacles[TilePlatform]

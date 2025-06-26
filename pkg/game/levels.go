@@ -91,7 +91,7 @@ var Levels = &[]GameLevel{
 			//{WID: 2, RowInd: 0, RowPos: 11},
 		},
 		Obs: []LObsRow{
-			{Obs: []uint8{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, Delay: DelSec(5), MsgInd: 21},
+			{Obs: []uint8{1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1}, Delay: DelSec(5), MsgInd: 21},
 			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(3)},
 			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(4), MsgInd: 1},
 			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: 0},
