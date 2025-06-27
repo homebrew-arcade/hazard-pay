@@ -7,9 +7,14 @@ import (
 )
 
 var rand = func() *randv2.Rand {
-	s := randv2.NewPCG(20, 25)
+	s := randv2.NewPCG(0, 0)
 	return randv2.New(s)
 }()
+
+func MakeRand(a uint64, b uint64) *randv2.Rand {
+	s := randv2.NewPCG(a, b)
+	return randv2.New(s)
+}
 
 const (
 	Debug = true

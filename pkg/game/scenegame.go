@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	randv2 "math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -24,6 +25,7 @@ type SceneGame struct {
 	gs         *GameState
 	msgText    *FontText
 	scoreText  *FontTextBasic
+	obsRand    *randv2.Rand
 	pls        []*Player
 	pRows      []PlayerRow
 	pltSprs    []Sprite
@@ -77,12 +79,13 @@ const (
 
 func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
 	if Debug {
-		gs.LvlInd = 1
-		s.obsRowInd = 0
+		gs.LvlInd = 2
+		s.obsRowInd = 17
 	}
 	s.gr = gr
 	s.gs = gs
 	s.lvl = (*Levels)[gs.LvlInd]
+	s.obsRand = MakeRand(s.lvl.SeedA, s.lvl.SeedB)
 	s.obsPreview = s.lvl.Obs[s.obsRowInd]
 	s.delayRmnd = s.obsPreview.Delay
 	s.sgState = SGStatePlaying
@@ -463,9 +466,14 @@ func (s *SceneGame) updateObstacles() {
 				s.obsPreview.Obs[i] = orgObs[i]
 			}
 			s.obsPreview.Obs[0] -= ObstaclePatternRandom
-			rand.Shuffle(len(s.obsPreview.Obs), func(i, j int) {
+			/*for i := len(s.obsPreview.Obs) - 1; i > 0; i-- { // Fisher–Yates shuffle
+				j := rand.IntN(i + 1)
+				s.obsPreview.Obs[i], s.obsPreview.Obs[j] = s.obsPreview.Obs[j], s.obsPreview.Obs[i]
+			}*/
+			s.obsRand.Shuffle(len(s.obsPreview.Obs), func(i, j int) {
 				s.obsPreview.Obs[i], s.obsPreview.Obs[j] = s.obsPreview.Obs[j], s.obsPreview.Obs[i]
 			})
+
 		}
 		if s.obsPreview.MsgInd > 0 && int(s.obsPreview.MsgInd) < len(Messages) {
 			s.msgText.SetText(Messages[s.obsPreview.MsgInd])
@@ -495,7 +503,8 @@ func (s *SceneGame) dequeueObstacles() {
 		di := int(s.obsDequeue[i])
 		obsFLen := len(s.obsFalling)
 		if di >= obsFLen {
-			log.Fatal("Obstable Dequeue index out of range ", di, obsFLen)
+			fmt.Println("Obstable Dequeue index out of range ", di, obsFLen)
+			continue
 		}
 		if obsFLen == 1 {
 			// straight trim, no swap

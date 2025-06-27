@@ -44,6 +44,8 @@ type GameLevel struct {
 	WRows []LWorkerRow
 	WPos  []LWorkerPos
 	Obs   []LObsRow
+	SeedA uint64
+	SeedB uint64
 }
 
 func DelSec(sec float64) int16 {
@@ -53,6 +55,8 @@ func DelSec(sec float64) int16 {
 var Levels = &[]GameLevel{
 	// Level 0
 	{
+		SeedA: 0,
+		SeedB: 0,
 		WRows: []LWorkerRow{
 			{LBnd: 5, RBnd: 16, ZPos: 1},
 			//{LBnd: 0, RBnd: 21, ZPos: 2},
@@ -85,6 +89,8 @@ var Levels = &[]GameLevel{
 	},
 	// Level 1
 	{
+		SeedA: 9388503,
+		SeedB: 20349869920041,
 		WRows: []LWorkerRow{
 			{LBnd: 0, RBnd: 21, ZPos: 1},
 			//{LBnd: 0, RBnd: 21, ZPos: 2},
@@ -96,35 +102,25 @@ var Levels = &[]GameLevel{
 			//{WID: 2, RowInd: 0, RowPos: 11},
 		},
 		Obs: []LObsRow{
-			{Obs: []uint8{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0}, Delay: DelSec(5), MsgInd: 21},
+			{Obs: []uint8{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2}, Delay: DelSec(5), MsgInd: 21},
 			{Obs: []uint8{101, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1), Repeat: 10},
+			{Obs: []uint8{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0}, Delay: DelSec(3.5)},
 			{Obs: []uint8{0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, Delay: DelSec(3.5)},
 			{Obs: []uint8{1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1}, Delay: DelSec(2)},
 			{Obs: []uint8{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}, Delay: DelSec(1)},
 			{Obs: []uint8{4, 2, 2, 3, 2, 2, 0, 2, 2, 0, 2, 2, 0, 2, 2, 3, 2, 2, 4, 2}, Delay: DelSec(1.5)},
 			{Obs: []uint8{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}, Delay: DelSec(2)},
 			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(0.5)},
-			// 8 DEBUG START
 			{Obs: []uint8{101, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1), Repeat: 10},
-			{Obs: []uint8{101, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 3, 0, 0, 0}, Delay: DelSec(2.5), Repeat: 10},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(1)},
+			{Obs: []uint8{101, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 4}, Delay: DelSec(2), Repeat: 10},
 			// standard tail
+			{Obs: []uint8{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0}, Delay: DelSec(3.5)},
+			{Obs: []uint8{0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, Delay: DelSec(3.5)},
+			{Obs: []uint8{1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1}, Delay: DelSec(2)},
+
+			{Obs: []uint8{4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5}, Delay: DelSec(3.5)},
+			{Obs: []uint8{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, Delay: DelSec(1)},
+			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: 6},
 			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(4), MsgInd: 1},
 			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: 0},
 			//{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -135,6 +131,8 @@ var Levels = &[]GameLevel{
 	},
 	// Level 2
 	{
+		SeedA: 94578312135,
+		SeedB: 647,
 		WRows: []LWorkerRow{
 			{LBnd: 0, RBnd: 21, ZPos: 1},
 			//{LBnd: 0, RBnd: 21, ZPos: 2},
@@ -159,14 +157,15 @@ var Levels = &[]GameLevel{
 			{Obs: []uint8{0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0}, Delay: DelSec(5), MsgInd: 23},
 			{Obs: []uint8{2, 0, 2, 0, 2, 0, 2, 0, 2, 2, 2, 2, 0, 2, 0, 2, 0, 2, 0, 2}, Delay: DelSec(1)},
 			{Obs: []uint8{0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 0, 2, 0, 2, 0, 2, 0}, Delay: DelSec(1)},
-			{Obs: []uint8{0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 0, 2, 0, 2, 0, 2, 0}, Delay: DelSec(1)},
 			{Obs: []uint8{2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 0, 2, 0, 2, 0, 2, 0, 2}, Delay: DelSec(1)},
+			{Obs: []uint8{0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 0, 2, 0, 2, 0, 2, 0}, Delay: DelSec(1)},
 			{Obs: []uint8{2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 2, 0, 0, 2, 0, 2, 0, 2, 0, 2}, Delay: DelSec(1)},
 			{Obs: []uint8{0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1}, Delay: DelSec(1.5)},
 			{Obs: []uint8{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}, Delay: DelSec(1.5)},
+			{Obs: []uint8{101, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 4, 3, 0, 0, 0, 0}, Delay: DelSec(2.5), Repeat: 10},
 			{Obs: []uint8{4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4}, Delay: DelSec(5), MsgInd: 24},
-			{Obs: []uint8{0, 0, 2, 0, 5, 0, 0, 2, 0, 1, 1, 0, 2, 0, 0, 5, 0, 2, 0, 0}, Delay: DelSec(3)},
-			{Obs: []uint8{4, 0, 2, 0, 1, 0, 0, 2, 0, 5, 5, 0, 2, 0, 0, 1, 0, 2, 0, 4}, Delay: DelSec(3)},
+			{Obs: []uint8{0, 0, 2, 0, 5, 0, 0, 2, 0, 1, 1, 0, 2, 0, 0, 5, 0, 2, 0, 0}, Delay: DelSec(1)},
+			{Obs: []uint8{4, 0, 2, 0, 1, 0, 0, 2, 0, 5, 5, 0, 2, 0, 0, 1, 0, 2, 0, 4}, Delay: DelSec(1)},
 			{Obs: []uint8{0, 2, 0, 0, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 0, 2, 0}, Delay: DelSec(1)},
 			{Obs: []uint8{0, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 4, 0, 0, 0, 0, 4, 0, 0, 0}, Delay: DelSec(1)},
 			// standard tail
