@@ -103,6 +103,7 @@ func MakeCharacterMap(fontImg *ebiten.Image) *CharacterMap {
 }
 
 type FontText struct {
+	TotalChars uint16
 	CharImgs   [][]*ebiten.Image
 	CharMap    *CharacterMap
 	X          int16
@@ -110,10 +111,14 @@ type FontText struct {
 	CharMask   uint16
 	LineSpace  uint8
 	RightAlign bool
+	CharDelay  uint8
+	CharDRmnd  uint8
 }
 
 func (ft *FontText) SetText(txts []string) {
 	ft.CharMask = 0
+	ft.TotalChars = 0
+	ft.CharDRmnd = ft.CharDelay
 	rowMax := len(txts)
 	ft.CharImgs = make([][]*ebiten.Image, rowMax)
 	lineMax := 0
@@ -125,6 +130,7 @@ func (ft *FontText) SetText(txts []string) {
 		}
 		for si, r := range ln {
 			ft.CharImgs[li][si] = ft.CharMap.GetFromRune(r)
+			ft.TotalChars++
 		}
 	}
 }
@@ -132,7 +138,12 @@ func (ft *FontText) Draw(dstImg *ebiten.Image) {
 	maskInd := 0
 	for li, ln := range ft.CharImgs {
 		for ci, cim := range ln {
+			if ft.CharDRmnd > 0 && maskInd > int(ft.CharMask) {
+				ft.CharDRmnd--
+				return
+			}
 			if maskInd > int(ft.CharMask) {
+				ft.CharDRmnd = ft.CharDelay
 				ft.CharMask = uint16(maskInd)
 				return
 			}

@@ -8,23 +8,29 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
 )
 
-// bgm
+var sndCtx = audio.NewContext(44100)
 
-func MakeAudioPlayerEmbedPath(path string, sampleRate int) *audio.Player {
+func MakeAudioPlayerEmbedPath(path string) *audio.Player {
 	sf, err := embedFS.ReadFile(path)
 	if err != nil {
-		log.Fatal("Unable to read bgm wav")
+		log.Fatal("Unable to read audio file", err)
 	}
 	s, err := vorbis.DecodeF32(bytes.NewReader(sf))
 	if err != nil {
-		log.Fatal("Unable to decode bgm wav")
+		log.Fatal("Unable to decode audio file", err)
 	}
-	var ctx = audio.NewContext(sampleRate)
-	p, err := ctx.NewPlayerF32(s)
+	p, err := sndCtx.NewPlayerF32(s)
 	if err != nil {
-		log.Fatal("Unable to make player for bgm wav")
+		log.Fatal("Unable to make player for audio file", err)
 	}
 	return p
 }
 
-var BgmPlayer = MakeAudioPlayerEmbedPath("assets/Jake Schofield - HardHatBop.ogg", 44100)
+var BgmPlayer = MakeAudioPlayerEmbedPath("assets/Jake Schofield - HardHatBop.ogg")
+var SndBeamBonk = MakeAudioPlayerEmbedPath("assets/beam_bonk.ogg")
+var SndBucketBonk = MakeAudioPlayerEmbedPath("assets/bucket_bonk.ogg")
+var SndWalking = MakeAudioPlayerEmbedPath("assets/walking.ogg")
+var SndForeman = MakeAudioPlayerEmbedPath("assets/foreman_talk.ogg")
+var SndBomb = MakeAudioPlayerEmbedPath("assets/bomb.ogg")
+var SndCash = MakeAudioPlayerEmbedPath("assets/cash.ogg")
+var SndPowerup = MakeAudioPlayerEmbedPath("assets/sandwich.ogg")

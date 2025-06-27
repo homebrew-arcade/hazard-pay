@@ -60,7 +60,7 @@ func (s *SceneTitle) Init(gr GameRoot, gs *GameState) {
 }
 
 func (s *SceneTitle) Update() error {
-	if InputIsBombJustPressed() {
+	if InputIsAJustPressed() {
 		s.gr.SetScene(&SceneGame{})
 		return nil
 	}

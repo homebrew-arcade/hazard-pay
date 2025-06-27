@@ -89,6 +89,7 @@ func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
 	s.msgText.X = 16
 	s.msgText.Y = 32
 	s.msgText.LineSpace = 4
+	s.msgText.CharDelay = 1
 	s.msgText.SetText(Messages[s.obsPreview.MsgInd])
 
 	s.scoreText = MakeFontTextBasic(CM, "$0.00")
@@ -96,7 +97,7 @@ func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
 	s.scoreText.X = 464
 	s.scoreText.Y = 48
 
-	BgmPlayer.SetVolume(0.25)
+	BgmPlayer.SetVolume(0.07)
 }
 
 func (s *SceneGame) Update() error {
@@ -104,6 +105,9 @@ func (s *SceneGame) Update() error {
 		if s.dyingF <= 0 {
 			s.dyingF = 0
 			s.sgState = SGStateDeload
+		}
+		if SndWalking.IsPlaying() {
+			SndWalking.Pause()
 		}
 		s.updateObstacles()
 		s.dyingF--
@@ -156,7 +160,9 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 		}
 		op.GeoM.Translate(float64(pl.X), float64(pl.Y))
 
-		if pl.IsMoving {
+		if pl.DazeF > 0 {
+			screen.DrawImage(ImgsWorker[1], op)
+		} else if pl.IsMoving {
 			if pl.AnimFHold == 0 {
 				pl.AnimFHold = 4
 				pl.AnimF++
@@ -166,8 +172,6 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 			}
 			pl.AnimFHold--
 			screen.DrawImage(ImgsWorker[pl.AnimF+2], op)
-		} else if pl.DazeF > 0 {
-			screen.DrawImage(ImgsWorker[1], op)
 		} else {
 			screen.DrawImage(ImgsWorker[0], op)
 		}
@@ -207,7 +211,11 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 	}
 
 	// Move mouth if message on screen
-	if len(s.msgText.CharImgs) > 0 {
+	if s.msgText.CharMask+1 < s.msgText.TotalChars {
+		if !SndForeman.IsPlaying() {
+			SndForeman.Rewind()
+			SndForeman.Play()
+		}
 		if s.mouthF <= 0 {
 			s.mouthF = 2 + int16(s.gs.P1Score%10)
 			s.mouthInd = uint8(rand.IntN(6))
@@ -215,6 +223,9 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 		s.mouthF--
 		screen.DrawImage(ImgsFaceSheet[s.mouthInd], ImgMouthOp)
 	} else {
+		if SndForeman.IsPlaying() {
+			SndForeman.Pause()
+		}
 		screen.DrawImage(ImgsFaceSheet[0], ImgMouthOp)
 	}
 
@@ -286,7 +297,7 @@ func (s *SceneGame) updateWorkerMovement() {
 			s.pls[i].Hold = true
 		}
 	}
-
+	anyMoving := false
 	if InputIsLeftPressed() {
 		if s.leftKeyDb == 0 || s.leftKeyDb > KeyDBLimit {
 			for _, pRow := range s.pRows {
@@ -306,6 +317,9 @@ func (s *SceneGame) updateWorkerMovement() {
 						pl.IsMoving = false
 					}
 					prevBnd = pl.X + TileSize
+					if pl.IsMoving {
+						anyMoving = true
+					}
 				}
 			}
 		}
@@ -334,6 +348,9 @@ func (s *SceneGame) updateWorkerMovement() {
 						pl.IsMoving = false
 					}
 					prevBnd = pl.X
+					if pl.IsMoving {
+						anyMoving = true
+					}
 				}
 			}
 		}
@@ -342,6 +359,13 @@ func (s *SceneGame) updateWorkerMovement() {
 		}
 	} else {
 		s.rightKeyDb = 0
+	}
+
+	if !anyMoving && SndWalking.IsPlaying() {
+		SndWalking.Pause()
+	} else if anyMoving && !SndWalking.IsPlaying() {
+		SndWalking.Rewind()
+		SndWalking.Play()
 	}
 
 	if InputIsBombJustPressed() {
@@ -354,6 +378,11 @@ func (s *SceneGame) updateWorkerMovement() {
 
 		if s.gs.P1Bombs > 0 {
 			s.gs.P1Bombs--
+
+			if !SndBomb.IsPlaying() {
+				SndBomb.Rewind()
+				SndBomb.Play()
+			}
 
 			// set all s.obsPreview.Obs to smoke tile
 			for i, currType := range s.obsPreview.Obs {
@@ -479,6 +508,10 @@ func (s *SceneGame) updateCollisions() {
 					default:
 						s.msgText.SetText(Messages[2])
 					}
+					for i := range s.pls {
+						s.pls[i].IsMoving = false
+						s.pls[i].DazeF = 1000
+					}
 					return
 				}
 			}
@@ -487,31 +520,56 @@ func (s *SceneGame) updateCollisions() {
 }
 
 func (s *SceneGame) handleCollision(obsType uint8, pInd int) bool {
+	//TODO: BUG WITH BEAM WHILE MOVING
 	switch obsType {
 	case ObstacleBucket:
+		if !SndBucketBonk.IsPlaying() {
+			SndBucketBonk.Rewind()
+			SndBucketBonk.Play()
+		}
 		if s.pls[pInd].DazeF > 0 && s.pls[pInd].DazeF < MaxDaze-32 {
 			s.gs.P1Lives--
 			return true
 		}
 		s.pls[pInd].DazeF = MaxDaze
+		s.pls[pInd].IsMoving = false
 	case ObstacleBeam:
+		if !SndBeamBonk.IsPlaying() {
+			SndBeamBonk.Rewind()
+			SndBeamBonk.Play()
+		}
 		if s.gs.P1Lives > 0 {
 			s.gs.P1Lives--
-			s.pls[pInd].DazeF = 1000
 			return true
 		}
 	case ObstacleSandwich:
+		if !SndCash.IsPlaying() {
+			SndCash.Rewind()
+			SndCash.Play()
+		}
 		s.gs.P1Score += SandwichPts
 	case ObstacleCash:
+		if !SndCash.IsPlaying() {
+			SndCash.Rewind()
+			SndCash.Play()
+		}
 		s.gs.P1Score += CashPts
 	case ObstacleBomb:
 		if s.gs.P1Bombs < 6 {
+			if !SndPowerup.IsPlaying() {
+				SndPowerup.Rewind()
+				SndPowerup.Play()
+			}
 			s.gs.P1Bombs++
 		}
 	case ObstacleCloud:
 		s.gs.P1Score += CloudPts
 	case IconLife:
 		if s.gs.P1Lives < 6 {
+			if !SndPowerup.IsPlaying() {
+				SndPowerup.Rewind()
+				SndPowerup.Play()
+			}
 			s.gs.P1Lives++
 		}
 	}

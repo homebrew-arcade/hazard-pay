@@ -112,6 +112,6 @@ var Messages = [][]string{
 		"A Game by Justin Horton",
 		"Made for EbitenJam 2025",
 		"Music by Jake Schofield",
-		"  Press SPACE to start ",
+		"   Press J to start!   ",
 	},
 }
