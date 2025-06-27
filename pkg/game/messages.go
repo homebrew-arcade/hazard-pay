@@ -131,7 +131,12 @@ var Messages = [][]string{
 	},
 	// 26
 	{
-		"Take it easy before the",
-		"next stage.",
+		"Day 3 - Wednesday",
+		"This is getting pretty weird.",
+	},
+	// 27
+	{
+		"Maybe there is a better way",
+		"to do this?",
 	},
 }
