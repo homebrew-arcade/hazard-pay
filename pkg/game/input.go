@@ -72,3 +72,8 @@ func InputIsHoldPressed(plLen int, wid int) bool {
 func InputIsAJustPressed() bool {
 	return inpututil.IsKeyJustPressed(InputA)
 }
+
+func InputIsPJustPressed() bool {
+	// Debug pause
+	return inpututil.IsKeyJustPressed(ebiten.KeyP)
+}

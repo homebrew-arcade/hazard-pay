@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"image"
 	"log"
-	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 type SGState = uint8
@@ -38,6 +38,7 @@ type SceneGame struct {
 	rightKeyDb uint8 // debounce counter
 	obsRowInd  uint8
 	mouthInd   uint8
+	debugPause bool
 }
 
 type Player struct {
@@ -68,13 +69,17 @@ const (
 	XVel        = 1
 	FallVel     = 1
 	KeyDBLimit  = 4
-	MaxDaze     = TPS * 3
+	MaxDaze     = TPS
 	CashPts     = 10000
 	SandwichPts = 5000
 	CloudPts    = 1000
 )
 
 func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
+	if Debug {
+		gs.LvlInd = 1
+		s.obsRowInd = 0
+	}
 	s.gr = gr
 	s.gs = gs
 	s.lvl = (*Levels)[gs.LvlInd]
@@ -101,6 +106,16 @@ func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
 }
 
 func (s *SceneGame) Update() error {
+
+	if Debug {
+		if InputIsPJustPressed() {
+			s.debugPause = !s.debugPause
+		}
+		if s.debugPause {
+			return nil
+		}
+	}
+
 	if s.sgState == SGStateDying {
 		if s.dyingF <= 0 {
 			s.dyingF = 0
@@ -236,6 +251,10 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 	}
 	s.scoreText.Draw(screen)
 	s.msgText.Draw(screen)
+
+	if Debug {
+		ebitenutil.DebugPrint(screen, fmt.Sprintf("%v:%v:%v:%v", s.gs.LvlInd, s.obsRowInd, s.obsPreview.Delay, s.delayRmnd))
+	}
 }
 
 func (s *SceneGame) Exit() {
@@ -413,19 +432,41 @@ func (s *SceneGame) updateObstacles() {
 			}
 			s.obsFalling = append(s.obsFalling, obs)
 		}
-		s.obsRowInd++
-		if int(s.obsRowInd) >= len(s.lvl.Obs) {
-			if s.gs.LvlInd == 0 {
-				ResetGameState(s.gs)
+
+		if s.obsPreview.Repeat == 0 {
+			s.obsRowInd++
+			if int(s.obsRowInd) >= len(s.lvl.Obs) {
+				if s.gs.LvlInd == 0 {
+					ResetGameState(s.gs)
+				}
+				s.gs.LvlInd++
+				if int(s.gs.LvlInd) >= len(*Levels) {
+					s.gr.SetScene(&SceneHighScore{})
+				}
+				s.sgState = SGStateDeload
+				return
 			}
-			s.gs.LvlInd++
-			if int(s.gs.LvlInd) >= len(*Levels) {
-				s.gr.SetScene(&SceneHighScore{})
-			}
-			s.sgState = SGStateDeload
-			return
 		}
+
+		lrpt := s.obsPreview.Repeat
 		s.obsPreview = s.lvl.Obs[s.obsRowInd]
+		if lrpt > 0 {
+			s.obsPreview.Repeat = lrpt - 1
+		}
+		if s.obsPreview.Obs[0] >= ObstaclePatternRandom {
+			// Randomize
+			// Use copy with new backing
+			orgObs := s.obsPreview.Obs
+			obsLen := len(orgObs)
+			s.obsPreview.Obs = make([]uint8, obsLen)
+			for i := range obsLen {
+				s.obsPreview.Obs[i] = orgObs[i]
+			}
+			s.obsPreview.Obs[0] -= ObstaclePatternRandom
+			rand.Shuffle(len(s.obsPreview.Obs), func(i, j int) {
+				s.obsPreview.Obs[i], s.obsPreview.Obs[j] = s.obsPreview.Obs[j], s.obsPreview.Obs[i]
+			})
+		}
 		if s.obsPreview.MsgInd > 0 && int(s.obsPreview.MsgInd) < len(Messages) {
 			s.msgText.SetText(Messages[s.obsPreview.MsgInd])
 		} else {

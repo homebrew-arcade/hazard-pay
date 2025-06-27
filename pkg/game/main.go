@@ -13,8 +13,8 @@ type Game struct {
 }
 
 func (g *Game) Init() {
-	//g.s = &SceneGame{}
-	g.s = &SceneTitle{}
+	g.s = &SceneGame{}
+	//g.s = &SceneTitle{}
 	//g.s = &SceneHighScore{}
 	g.queuedS = nil
 	g.gs = MakeGameState()

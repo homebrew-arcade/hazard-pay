@@ -1,6 +1,15 @@
 package game
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	randv2 "math/rand/v2"
+
+	"github.com/hajimehoshi/ebiten/v2"
+)
+
+var rand = func() *randv2.Rand {
+	s := randv2.NewPCG(20, 25)
+	return randv2.New(s)
+}()
 
 const (
 	Debug = true

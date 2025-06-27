@@ -7,7 +7,7 @@ var Messages = [][]string{
 	//  "                                        ",
 	// 1
 	{
-		"Stage Clear!",
+		"Work day completed.",
 	},
 	// 2
 	{
@@ -105,7 +105,7 @@ var Messages = [][]string{
 	// 21
 	{
 		"Day 1 - Monday",
-		"Let's start with a single worker",
+		"Let's start with one worker",
 	},
 	// 22
 	{
@@ -113,5 +113,25 @@ var Messages = [][]string{
 		"Made for EbitenJam 2025",
 		"Music by Jake Schofield",
 		"   Press J to start!   ",
+	},
+	// 23
+	{
+		"Woah! That was rough.",
+		"You're doing great, kid.",
+	},
+	// 24
+	{
+		"Look, I know it's hard.",
+		"It's an arcade game!",
+	},
+	// 25
+	{
+		"Day 2 - Tuesday",
+		"You're ready for a pair now.",
+	},
+	// 26
+	{
+		"Take it easy before the",
+		"next stage.",
 	},
 }

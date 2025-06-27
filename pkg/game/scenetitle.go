@@ -2,7 +2,6 @@ package game
 
 import (
 	"log"
-	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
