@@ -82,9 +82,7 @@ func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
 	s.delayRmnd = s.obsPreview.Delay
 	s.sgState = SGStatePlaying
 	s.dyingF = TPS * 4
-}
 
-func (s *SceneGame) Enter() {
 	// Set up level
 	s.makeWorkerPlatforms()
 	s.msgText = MakeFontText(CM, []string{})
@@ -112,14 +110,9 @@ func (s *SceneGame) Update() error {
 		return nil
 	}
 	if s.sgState == SGStateDeload {
-		if s.gs.LvlInd == 0 {
-			// Tutorial reset
-			s.gs.P1Score = 0
-			s.gs.P1Lives = 3
-			s.gs.P1Bombs = 2
-		}
 		if s.gs.P1Lives == 0 {
-			log.Fatal("Game over")
+			s.gr.SetScene(&SceneHighScore{})
+			return nil
 		}
 		s.gr.SetScene(&SceneGame{})
 		return nil
@@ -138,12 +131,9 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 	screen.DrawImage(ImgForeman, ImgFormanDrawOp)
 
 	for _, sp := range s.pltSprs {
-		if sp.Img == nil {
-			continue
-		}
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(sp.X), float64(sp.Y))
-		screen.DrawImage(sp.Img, op)
+		screen.DrawImage(ImgPlatform, op)
 	}
 
 	for tx, obsType := range s.obsPreview.Obs {
@@ -219,8 +209,8 @@ func (s *SceneGame) Draw(screen *ebiten.Image) {
 	// Move mouth if message on screen
 	if len(s.msgText.CharImgs) > 0 {
 		if s.mouthF <= 0 {
-			s.mouthF = 5 + int16(s.gs.P1Score%10)
-			s.mouthInd = uint8(rand.IntN(5)) + 1
+			s.mouthF = 2 + int16(s.gs.P1Score%10)
+			s.mouthInd = uint8(rand.IntN(6))
 		}
 		s.mouthF--
 		screen.DrawImage(ImgsFaceSheet[s.mouthInd], ImgMouthOp)
@@ -252,9 +242,9 @@ func (s *SceneGame) makeWorkerPlatforms() {
 		// Draw Platform
 		for i := range wRow.RBnd - 1 - wRow.LBnd {
 			s.pltSprs = append(s.pltSprs, Sprite{
-				X:   (int16(wRow.LBnd) * TileSize) + (int16(i) * TileSize) + TileSize,
-				Y:   ScreenHeight - TileSize - (int16(wRow.ZPos) * TileSize),
-				Img: ImgPlatform,
+				X: (int16(wRow.LBnd) * TileSize) + (int16(i) * TileSize) + TileSize,
+				Y: ScreenHeight - TileSize - (int16(wRow.ZPos) * TileSize),
+				//Img: ImgPlatform, Implied
 			})
 		}
 	}
@@ -268,10 +258,13 @@ func (s *SceneGame) makeWorkerPlatforms() {
 
 		switch wPos.WID {
 		case 0:
+			pl.AnimF = 0
 			s.pls[0] = pl
 		case 1:
+			pl.AnimF = 3
 			s.pls[1] = pl
 		case 2:
+			pl.AnimF = 6
 			s.pls[2] = pl
 		default:
 			log.Fatal("Bad WorkerPos WID")
@@ -305,13 +298,14 @@ func (s *SceneGame) updateWorkerMovement() {
 						prevBnd = pl.X + TileSize
 						continue
 					}
+					pl.IsMoving = true
 					pl.DirR = false
 					pl.X -= XVel
 					if pl.X < prevBnd {
 						pl.X = prevBnd
+						pl.IsMoving = false
 					}
 					prevBnd = pl.X + TileSize
-					pl.IsMoving = true
 				}
 			}
 		}
@@ -332,13 +326,14 @@ func (s *SceneGame) updateWorkerMovement() {
 						prevBnd = pl.X
 						continue
 					}
+					pl.IsMoving = true
 					pl.DirR = true
 					pl.X += XVel
 					if pl.X+TileSize > prevBnd {
 						pl.X = prevBnd - TileSize
+						pl.IsMoving = false
 					}
 					prevBnd = pl.X
-					pl.IsMoving = true
 				}
 			}
 		}
@@ -351,14 +346,13 @@ func (s *SceneGame) updateWorkerMovement() {
 
 	if InputIsBombJustPressed() {
 		if s.gs.LvlInd == 0 {
-			// Tutorial skip
+			ResetGameState(s.gs)
 			s.gs.LvlInd++
 			s.sgState = SGStateDeload
 			return
 		}
 
 		if s.gs.P1Bombs > 0 {
-			fmt.Println("Bomb activated")
 			s.gs.P1Bombs--
 
 			// set all s.obsPreview.Obs to smoke tile
@@ -392,10 +386,12 @@ func (s *SceneGame) updateObstacles() {
 		}
 		s.obsRowInd++
 		if int(s.obsRowInd) >= len(s.lvl.Obs) {
+			if s.gs.LvlInd == 0 {
+				ResetGameState(s.gs)
+			}
 			s.gs.LvlInd++
 			if int(s.gs.LvlInd) >= len(*Levels) {
-				// TODO: Game Over
-				log.Fatal("No more levels")
+				s.gr.SetScene(&SceneHighScore{})
 			}
 			s.sgState = SGStateDeload
 			return
@@ -501,6 +497,7 @@ func (s *SceneGame) handleCollision(obsType uint8, pInd int) bool {
 	case ObstacleBeam:
 		if s.gs.P1Lives > 0 {
 			s.gs.P1Lives--
+			s.pls[pInd].DazeF = 1000
 			return true
 		}
 	case ObstacleSandwich:

@@ -20,8 +20,16 @@ func InputIsLeftPressed() bool {
 	return ebiten.IsKeyPressed(InputL)
 }
 
+func InputIsLeftJustPressed() bool {
+	return inpututil.IsKeyJustPressed(InputL)
+}
+
 func InputIsRightPressed() bool {
 	return ebiten.IsKeyPressed(InputR)
+}
+
+func InputIsRightJustPressed() bool {
+	return inpututil.IsKeyJustPressed(InputR)
 }
 
 func InputIsBombJustPressed() bool {
@@ -59,4 +67,8 @@ func InputIsHoldPressed(plLen int, wid int) bool {
 		}
 	}
 	return false
+}
+
+func InputIsAJustPressed() bool {
+	return inpututil.IsKeyJustPressed(InputA)
 }

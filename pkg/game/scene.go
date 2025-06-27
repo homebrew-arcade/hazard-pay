@@ -6,7 +6,6 @@ import (
 
 type Scene interface {
 	Init(GameRoot, *GameState)
-	Enter()
 	Update() error
 	Draw(*ebiten.Image)
 	Exit()

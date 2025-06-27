@@ -13,26 +13,30 @@ import (
 //go:embed assets/*
 var embedFS embed.FS
 
-var ImgGameBg = func() *ebiten.Image {
-	img, _, err := ebitenutil.NewImageFromFileSystem(embedFS, "assets/gamebg.png")
+var BGColor = color.NRGBA{R: 185, G: 191, B: 251, A: 255}
+
+func LoadEbitenImgFatal(p string) *ebiten.Image {
+	img, _, err := ebitenutil.NewImageFromFileSystem(embedFS, p)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return img
-}()
+}
+
+func MakeTranslateOp(x float64, y float64) *ebiten.DrawImageOptions {
+	op := ebiten.DrawImageOptions{}
+	op.GeoM.Translate(x, y)
+	return &op
+}
+
+var ImgGameBg = LoadEbitenImgFatal("assets/gamebg.png")
 var ImgGameBgDrawOp = func() *ebiten.DrawImageOptions {
 	return &ebiten.DrawImageOptions{}
 }()
 
 const WorkerTileCount = 10
 
-var ImgWorkerSheet = func() *ebiten.Image {
-	img, _, err := ebitenutil.NewImageFromFileSystem(embedFS, "assets/workersheet.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	return img
-}()
+var ImgWorkerSheet = LoadEbitenImgFatal("assets/workersheet.png")
 var ImgsWorker = func() []*ebiten.Image {
 	imgs := make([]*ebiten.Image, WorkerTileCount)
 	for i := range WorkerTileCount {
@@ -41,27 +45,10 @@ var ImgsWorker = func() []*ebiten.Image {
 	return imgs
 }()
 
-var ImgForeman = func() *ebiten.Image {
-	img, _, err := ebitenutil.NewImageFromFileSystem(embedFS, "assets/foreman.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	return img
-}()
-var ImgFormanDrawOp = func() *ebiten.DrawImageOptions {
-	op := ebiten.DrawImageOptions{}
-	op.GeoM.Translate(375, 141)
-	return &op
-}()
+var ImgForeman = LoadEbitenImgFatal("assets/foreman.png")
+var ImgFormanDrawOp = MakeTranslateOp(375, 141)
 
-var ImgObstacleSheet = func() *ebiten.Image {
-	img, _, err := ebitenutil.NewImageFromFileSystem(embedFS, "assets/obstacles.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	return img
-}()
-
+var ImgObstacleSheet = LoadEbitenImgFatal("assets/obstacles.png")
 var ImgsObstacles = func() []*ebiten.Image {
 	imgs := make([]*ebiten.Image, ObstacleTileCount)
 	for i := range ObstacleTileCount {
@@ -70,14 +57,7 @@ var ImgsObstacles = func() []*ebiten.Image {
 	return imgs
 }()
 
-var ImgFaceSheet = func() *ebiten.Image {
-	img, _, err := ebitenutil.NewImageFromFileSystem(embedFS, "assets/facesheet.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	return img
-}()
-
+var ImgFaceSheet = LoadEbitenImgFatal("assets/facesheet.png")
 var ImgsFaceSheet = func() []*ebiten.Image {
 	// 7 mouth shapes and one blink
 	imgs := make([]*ebiten.Image, 8)
@@ -87,16 +67,8 @@ var ImgsFaceSheet = func() []*ebiten.Image {
 	imgs[7] = ImgFaceSheet.SubImage(image.Rect(224, 0, 224+(TileSize*3), TileSize)).(*ebiten.Image)
 	return imgs
 }()
-var ImgBlinkOp = func() *ebiten.DrawImageOptions {
-	op := ebiten.DrawImageOptions{}
-	op.GeoM.Translate(384, 186)
-	return &op
-}()
-var ImgMouthOp = func() *ebiten.DrawImageOptions {
-	op := ebiten.DrawImageOptions{}
-	op.GeoM.Translate(397, 210)
-	return &op
-}()
+var ImgBlinkOp = MakeTranslateOp(384, 186)
+var ImgMouthOp = MakeTranslateOp(397, 210)
 
 var ImgPlatform = ImgsObstacles[TilePlatform]
 
@@ -110,3 +82,8 @@ var ImgFont = func() *ebiten.Image {
 }()
 
 var CM = MakeCharacterMap(ImgFont)
+
+var ImgTitlecard = LoadEbitenImgFatal("assets/titlecard.png")
+var ImgTitlecardDrawOp = MakeTranslateOp(128, 32)
+
+var ImgNameHightlight = LoadEbitenImgFatal("assets/namehighlight.png")

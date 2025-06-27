@@ -13,7 +13,9 @@ type Game struct {
 }
 
 func (g *Game) Init() {
-	g.s = &SceneGame{}
+	//g.s = &SceneGame{}
+	g.s = &SceneTitle{}
+	//g.s = &SceneHighScore{}
 	g.queuedS = nil
 	g.gs = MakeGameState()
 }
@@ -23,7 +25,6 @@ func (g *Game) Update() error {
 		g.s = g.queuedS
 		g.queuedS = nil
 		g.s.Init(g, g.gs)
-		g.s.Enter()
 	}
 	err := g.s.Update()
 	if err != nil {
@@ -33,6 +34,7 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	screen.Fill(BGColor)
 	g.s.Draw(screen)
 }
 
@@ -45,7 +47,6 @@ func (g *Game) Enter() {
 		log.Fatal("no scene provided to gameroot")
 	}
 	g.s.Init(g, g.gs)
-	g.s.Enter()
 }
 
 func (g *Game) SetScene(ns Scene) {

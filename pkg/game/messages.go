@@ -28,7 +28,7 @@ var Messages = [][]string{
 	// 6
 	{
 		"Day 0 - Training",
-		"Press Space anytime to Skip",
+		"Press SPACE anytime to Skip",
 	},
 	// 7
 	{
@@ -108,4 +108,10 @@ var Messages = [][]string{
 		"Let's start with a single worker",
 	},
 	// 22
+	{
+		"A Game by Justin Horton",
+		"Made for EbitenJam 2025",
+		"Music by Jake Schofield",
+		"  Press SPACE to start ",
+	},
 }
