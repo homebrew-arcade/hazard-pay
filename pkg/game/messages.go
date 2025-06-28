@@ -139,4 +139,49 @@ var Messages = [][]string{
 		"Maybe there is a better way",
 		"to do this?",
 	},
+	// 28
+	{
+		"Day 4 - Thursday",
+		"I can't wait for this week to",
+		"be over!",
+	},
+	// 29
+	{
+		"Day 5 - Friday",
+		"The longest day.",
+	},
+	// 30
+	{
+		"I have good news and",
+		"I have bad news...",
+	},
+	// 31
+	{
+		"Good news is:",
+		"One of the crew called in sick tomorrow.",
+		"Easier to manage!",
+	},
+	// 32
+	{
+		"The bad news is:",
+		"Ya'll gotta work over-time.",
+	},
+	// 33
+	{
+		"Actually, ain't no telling how much...",
+	},
+	// 34
+	{
+		"Well, I've got half day planned.",
+		"Good luck, and lock up on your",
+		"way out!",
+	},
+	// 35
+	{
+		"What the hell?!",
+		"How'd you make it this far?",
+		"Really, congrats!",
+		"Unfortunately this can't go",
+		"on forever...",
+	},
 }
