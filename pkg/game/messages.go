@@ -132,7 +132,7 @@ var Messages = [][]string{
 	// 26
 	{
 		"Day 3 - Wednesday",
-		"This is getting pretty weird.",
+		"It's a lot to keep straight.",
 	},
 	// 27
 	{
