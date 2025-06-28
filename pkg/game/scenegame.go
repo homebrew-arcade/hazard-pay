@@ -79,8 +79,8 @@ const (
 
 func (s *SceneGame) Init(gr GameRoot, gs *GameState) {
 	if Debug {
-		gs.LvlInd = 5
-		s.obsRowInd = 13
+		gs.LvlInd = 0
+		s.obsRowInd = 0
 	}
 	s.gr = gr
 	s.gs = gs

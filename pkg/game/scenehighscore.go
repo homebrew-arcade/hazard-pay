@@ -7,20 +7,23 @@ import (
 )
 
 type SceneHighScore struct {
-	gr        GameRoot
-	gs        *GameState
-	scrText   *FontText
-	entryText *FontText
-	scrStrs   []string
-	name      string
-	idleF     int16
-	hsIndex   uint8
-	crsX      uint8
-	crsY      uint8
+	gr          GameRoot
+	gs          *GameState
+	scrText     *FontText
+	entryText   *FontText
+	creditsText *FontText
+	scrStrs     []string
+	name        string
+	idleF       int16
+	creditsF    int16
+	hsIndex     uint8
+	crsX        uint8
+	crsY        uint8
+	creditsInd  uint8
 }
 
 const (
-	HSEntryIdleMax  = TPS * 10
+	HSEntryIdleMax  = TPS * 15
 	EntryCursorMaxX = 8
 	EntryCursorMaxY = 2
 	NameMax         = 6
@@ -31,6 +34,31 @@ var EntryLookup = []string{
 	"ABCDEFGHI",
 	"JKLMNOPQR",
 	"STUVWXYZ>",
+}
+
+var CreditsStrs = [][]string{
+	{
+		"Programming, Art and sound",
+		"Justin Horton",
+		"github.com/BossRighteous",
+	},
+	{
+		"Music",
+		"HardHatBop",
+		"By my bestie Jake Schofield",
+	},
+	{
+		"Developed using Go and Ebitengine",
+		"Ebitengine Game Jam 2025 Entry",
+	},
+	{
+		"Although it's for a Jam, I intend",
+		"to develop it further into a physical",
+		"arcade cabinet",
+	},
+	{
+		"Thank you for playing!",
+	},
 }
 
 func (s *SceneHighScore) Init(gr GameRoot, gs *GameState) {
@@ -52,28 +80,41 @@ func (s *SceneHighScore) Init(gr GameRoot, gs *GameState) {
 			"J: Accept",
 			"SPACE: DEL",
 		})
-		s.entryText.X = 16
+		s.entryText.X = 200
 		s.entryText.Y = 32
 		s.entryText.LineSpace = 4
 	}
 
 	s.scrText = MakeFontText(CM, s.scrStrs)
-	s.scrText.X = 16
-	s.scrText.Y = 128
+	s.scrText.X = 32
+	s.scrText.Y = 32
 	s.scrText.LineSpace = 4
+
+	s.creditsText = MakeFontText(CM, CreditsStrs[s.creditsInd])
+	s.creditsText.X = 32
+	s.creditsText.Y = 192
+	s.creditsText.LineSpace = 4
 }
 
 func (s *SceneHighScore) Update() error {
-
 	if s.idleF > HSEntryIdleMax {
 		s.gr.SetScene(&SceneTitle{})
 		return nil
 	}
 
 	if s.hsIndex != HSIndNull {
-		//DO NAME ENTRY AGAINST s.name and s.gs.HighScores[hsIndex]
 		s.handleInput()
+	} else {
+		if s.creditsF > TPS*3 {
+			s.creditsF = 0
+			s.creditsInd++
+			if int(s.creditsInd) < len(CreditsStrs) {
+				s.creditsText.SetText(CreditsStrs[s.creditsInd])
+			}
+		}
+		s.creditsF++
 	}
+
 	s.idleF++
 	return nil
 }
@@ -138,6 +179,8 @@ func (s *SceneHighScore) updateName() {
 }
 
 func (s *SceneHighScore) Draw(screen *ebiten.Image) {
+	screen.DrawImage(ImgGameBg, ImgGameBgDrawOp)
+
 	if s.hsIndex != HSIndNull && s.entryText != nil {
 		s.entryText.Draw(screen)
 
@@ -146,6 +189,12 @@ func (s *SceneHighScore) Draw(screen *ebiten.Image) {
 		screen.DrawImage(ImgNameHightlight, hlop)
 	}
 	s.scrText.Draw(screen)
+	s.creditsText.Draw(screen)
+
+	if !BgmPlayer.IsPlaying() {
+		BgmPlayer.Rewind()
+		BgmPlayer.Play()
+	}
 
 }
 

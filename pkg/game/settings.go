@@ -17,7 +17,7 @@ func MakeRand(a uint64, b uint64) *randv2.Rand {
 }
 
 const (
-	Debug = true
+	Debug = false
 
 	ScreenWidth  = 480 // 30 tiles
 	ScreenHeight = 256 // 16 tiles
